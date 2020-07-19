@@ -1,0 +1,68 @@
+spring.jmx:
+   enabled: false
+
+spring.datasource:
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:bootexample;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE
+
+server:
+  port: 8080
+  http2:
+    enabled: true
+  servlet:
+    context-path: "/"
+
+#todo: make sure to always enable security in production
+security:
+  basic:
+    enabled: false
+
+#management endpoints on a separate port
+management:
+  port: 8081
+  security:
+    enabled: false # management port is internal only. no need to secure it.
+
+#default project info followed by actual injected pom-specified values.
+project:
+  name: spring-boot-demo
+  version: 1.0
+  description: spring-boot-demo default description
+info:
+  build:
+    artifact: ${project.artifactId}
+    name: ${project.name}
+    description: ${project.description}
+    version: ${project.version}
+
+hotel.service:
+  name: 'default profile:'
+
+logging.pattern.console: "%clr(%d{yy-MM-dd E HH:mm:ss.SSS}){blue} %clr(%-5p) %clr(${PID}){faint} %clr(---){faint} %clr([%8.15t]){cyan} %clr(%-40.40logger{0}){blue} %clr(:){red} %clr(%m){faint}%n"
+management.endpoints.web.exposure.include: "health,info,metrics,prometheus,loggers"
+management.metrics.enable.all: "true"
+management.metrics.distribution.percentiles-histogram.http.server.requests: "true"
+management.metrics.distribution.sla.http.server.requests: "1ms,5ms"
+management.endpoint.loggers.enabled: "true"
+logging.level.ROOT: "INFO"
+logging.level.org.springframework.: "DEBUG"
+logging.level.com.test.example: "DEBUG"
+logging.file.path: "/var/log"
+logging.file.name: "application.log"
+logging.pattern.file: "%d{yyyy-MM-dd } [%thread] %-5level %logger{36} - %msg%n"
+#---
+#spring:
+#  profiles: test
+#  h2:
+#    console:
+#      enabled: true
+#
+#spring.jpa:
+#    hibernate.ddl-auto: create-drop
+#
+#hotel.service:
+#  name: 'test profile:'
+#
+#logging:
+#  file: boot_example.log
+#  org.hibernate: INFO
