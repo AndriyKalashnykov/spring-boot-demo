@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<com.test.example.domain.Hotel>
+    <name>Beds R Us - XML</name>
+    <description>Very basic, small rooms but clean</description>
+    <city>Santa Ana</city>
+    <rating>2</rating>
+</com.test.example.domain.Hotel>

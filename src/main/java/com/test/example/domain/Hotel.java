@@ -4,12 +4,13 @@ import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "hotel")
-@XmlRootElement
+@XmlRootElement(name = "hotel")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Hotel {
+public class Hotel implements Serializable {
 
     @Id
     @GeneratedValue()
