@@ -59,11 +59,11 @@ or
 ### Application health, configurations, documentation links
 
 ```
-http://localhost:8181/actuator/env
-http://localhost:8181/actuator/health
-http://localhost:8181/actuator/health/hotelServiceHealth
-http://localhost:8181/actuator/info
-http://localhost:8181/actuator/metrics
+http://localhost:8080/actuator/env
+http://localhost:8080/actuator/health
+http://localhost:8080/actuator/health/hotelServiceHealth
+http://localhost:8080/actuator/info
+http://localhost:8080/actuator/metrics
 
 http://localhost:8080/swagger-ui.html
 ```
@@ -132,7 +132,7 @@ open -a /Applications/Google\ Chrome.app http://localhost:8080/swagger-ui.html
 
   ```
   # adding 100 to port number to avoid local conflicts (McAfee runs on 8081)
-  docker run --name spring-boot-rest-example -p 8080:8080 -p 8181:8081 spring-boot-rest-example:latest
+  docker run --name spring-boot-rest-example -p 8080:8080 -p 8080:8081 spring-boot-rest-example:latest
 
   curl -X POST 'http://localhost:8080/example/v1/hotels' --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json --stderr -
 
