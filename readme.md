@@ -85,11 +85,11 @@ curl -X POST 'http://localhost:8080/example/v1/hotels' --header 'Content-Type: a
 ### Retrieve a paginated list of hotels
 
 ```
-curl -X GET --silent 'http://localhost:8080/example/v1/hotels?page=0&size=10' --stderr -  2>&1 | jq .
+curl -X GET --silent 'http://localhost:8080/example/v1/hotels?page=0&size=10&mediaType=json' --stderr -  2>&1 | jq .
 ```
 or
 ```
-http  'http://localhost:8080/example/v1/hotels?page=0&size=10'
+http  'http://localhost:8080/example/v1/hotels?page=0&size=10&mediaType=json'
 ```
 ### Swagger 2 API docs
 
