@@ -7,6 +7,7 @@ import org.springframework.web.servlet.config.annotation.ContentNegotiationConfi
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+@SuppressWarnings("deprecation")
 @Configuration
 @EnableWebMvc
 @ComponentScan
