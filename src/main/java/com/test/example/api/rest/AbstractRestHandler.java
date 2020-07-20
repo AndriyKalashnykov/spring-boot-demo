@@ -35,7 +35,7 @@ public abstract class AbstractRestHandler implements ApplicationEventPublisherAw
     RestErrorInfo handleDataStoreException(DataFormatException ex, WebRequest request, HttpServletResponse response) {
         log.info("Converting Data Store exception to RestResponse : " + ex.getMessage());
 
-        return new RestErrorInfo(ex, "You messed up.");
+        return new RestErrorInfo(ex, "handleDataStoreException");
     }
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -43,9 +43,9 @@ public abstract class AbstractRestHandler implements ApplicationEventPublisherAw
     public
     @ResponseBody
     RestErrorInfo handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request, HttpServletResponse response) {
-        log.info("ResourceNotFoundException handler:" + ex.getMessage());
+        log.info("ResourceNotFoundException handler: " + ex.getMessage());
 
-        return new RestErrorInfo(ex, "Sorry I couldn't find it.");
+        return new RestErrorInfo(ex, "handleResourceNotFoundException");
     }
 
     @Override

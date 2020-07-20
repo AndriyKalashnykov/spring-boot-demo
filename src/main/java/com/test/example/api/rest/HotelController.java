@@ -67,10 +67,13 @@ public class HotelController extends AbstractRestHandler {
     @ApiOperation(value = "Get a single hotel.", notes = "You have to provide a valid hotel ID.")
     public
     @ResponseBody
-    Optional<Hotel> getHotel(@ApiParam(value = "The ID of the hotel.", required = true)
+    Hotel getHotel(@ApiParam(value = "The ID of the hotel.", required = true)
                    @PathVariable("id") Long id,
                    HttpServletRequest request, HttpServletResponse response) throws Exception {
-        Optional<Hotel> hotel = this.hotelService.getHotel(id);
+        Hotel hotel = this.hotelService.getHotel(id);
+
+        log.debug("checkResourceFound: " + hotel.toString());
+
         checkResourceFound(hotel);
         //todo: http://goo.gl/6iNAkz
         return hotel;

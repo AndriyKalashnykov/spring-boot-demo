@@ -93,9 +93,10 @@ public class HotelControllerTest {
                 .andExpect(status().isNoContent());
 
         //RETRIEVE should fail
-        mvc.perform(get("/example/v1/hotels/" + id)
+        mvc.perform(get("/example/v1/hotels/" + 100L)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+
 
         //todo: you can test the 404 error body too.
 

@@ -2,14 +2,13 @@ package com.test.example.service;
 
 import com.test.example.dao.jpa.HotelRepository;
 import com.test.example.domain.Hotel;
+import com.test.example.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 /*
  * Sample service to demonstrate what the API would use to get things done
@@ -35,8 +34,8 @@ public class HotelService {
         return hotelRepository.save(hotel);
     }
 
-    public Optional<Hotel> getHotel(long id) {
-        return hotelRepository.findById(id);
+    public Hotel getHotel(long id) {
+        return hotelRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException(id));
     }
 
     public void updateHotel(Hotel hotel) {

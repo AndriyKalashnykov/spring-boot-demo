@@ -22,6 +22,9 @@ management:
   port: 8081
   security:
     enabled: false # management port is internal only. no need to secure it.
+  endpoint:
+    health:
+      enabled: true
 
 #default project info followed by actual injected pom-specified values.
 project:
@@ -45,11 +48,16 @@ management.metrics.distribution.percentiles-histogram.http.server.requests: "tru
 management.metrics.distribution.sla.http.server.requests: "1ms,5ms"
 management.endpoint.loggers.enabled: "true"
 logging.level.ROOT: "INFO"
-logging.level.org.springframework.: "DEBUG"
+logging.level.org.springframework.: "INFO"
 logging.level.com.test.example: "DEBUG"
 logging.file.path: "/var/log"
 logging.file.name: "application.log"
 logging.pattern.file: "%d{yyyy-MM-dd } [%thread] %-5level %logger{36} - %msg%n"
+
+#cors.allowed-origins[0]: "*"
+#info.actuator: "http://localhost:8080/actuator"
+#info.swagger: "http://localhost:8080/v2/api-docs"
+
 #---
 #spring:
 #  profiles: test
