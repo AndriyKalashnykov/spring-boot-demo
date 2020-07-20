@@ -4,11 +4,11 @@ package com.test.example.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.actuate.health.Status;
 import org.springframework.stereotype.Component;
 
 /**
- * This is an optional class used to inject application specific health check
- * into the Spring Boot health management endpoint.
+ * Application specific health check with Spring Boot health management endpoint.
  */
 @Component
 public class HotelServiceHealth implements HealthIndicator {
@@ -16,10 +16,22 @@ public class HotelServiceHealth implements HealthIndicator {
     @Autowired
     private ServiceProperties configuration;
 
-    // extend this to create an application-specific health check according to http://goo.gl/vt8I7O
-    @Override
-    public Health health() {
-        return Health.up().withDetail("details", "{ 'internals' : 'getting close to limit', 'profile' : '" + this.configuration.getName() + "' }").status("itsok!").build();
+    private int check() {
+        int result = 0;
+
+        return result;
     }
 
+    // application-specific health check according to https://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference/htmlsingle/#production-ready-health
+    @Override
+    public Health health() {
+
+        int errorCode = check(); // perform some specific health check
+
+        if (errorCode != 0) {
+            return Health.down().withDetail("Error Code", errorCode).build();
+        }
+
+        return Health.up().withDetail("details", "{ 'internals' : 'all good', 'profile' : '" + this.configuration.getName() + "' }") .status(Status.UP).build();
+    }
 }

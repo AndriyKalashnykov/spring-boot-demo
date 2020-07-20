@@ -1,9 +1,5 @@
 package com.test.example.test;
 
-/**
- * Uses JsonPath: http://goo.gl/nwXpb, Hamcrest and MockMVC
- */
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.example.Application;
 import com.test.example.api.rest.HotelController;

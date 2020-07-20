@@ -12,41 +12,62 @@ server:
   servlet:
     context-path: "/"
 
-#todo: make sure to always enable security in production
-security:
-  basic:
-    enabled: false
-
 #management endpoints on a separate port
 management:
-  port: 8081
-  security:
-    enabled: false # management port is internal only. no need to secure it.
+  metrics:
+    enable:
+      all: true
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+  server:
+    port: 8080
+  context-path: "/"
+
+  endpoints:
+    enabled-by-default: false
+    web:
+      base-path: "/actuator"
+      exposure:
+        include: "health,info,metrics,prometheus,loggers,env,configprops"
   endpoint:
+    env:
+      enabled: true
+    configprops:
+      enabled: true
+    info:
+      enabled: true
     health:
+      enabled: true
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    loggers:
+      enabled: true
+    sessions:
       enabled: true
 
 #default project info followed by actual injected pom-specified values.
 project:
-  name: spring-boot-demo
-  version: 1.0
-  description: spring-boot-demo default description
+  name: @project.name@
+  version:  @project.artifactId@
+  description:  "@project.description@"
 info:
   build:
-    artifact: ${project.artifactId}
-    name: ${project.name}
-    description: ${project.description}
-    version: ${project.version}
+    artifact: @project.artifactId@
+    name: @project.name@
+    description: "@project.description@"
+    version: @project.version@
 
 hotel.service:
-  name: 'default profile:'
+  name: 'default profile'
 
 logging.pattern.console: "%clr(%d{yy-MM-dd E HH:mm:ss.SSS}){blue} %clr(%-5p) %clr(${PID}){faint} %clr(---){faint} %clr([%8.15t]){cyan} %clr(%-40.40logger{0}){blue} %clr(:){red} %clr(%m){faint}%n"
-management.endpoints.web.exposure.include: "health,info,metrics,prometheus,loggers"
-management.metrics.enable.all: "true"
-management.metrics.distribution.percentiles-histogram.http.server.requests: "true"
-management.metrics.distribution.sla.http.server.requests: "1ms,5ms"
-management.endpoint.loggers.enabled: "true"
 logging.level.ROOT: "INFO"
 logging.level.org.springframework.: "INFO"
 logging.level.com.test.example: "DEBUG"

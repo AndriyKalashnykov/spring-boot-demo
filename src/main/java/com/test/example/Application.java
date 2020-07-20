@@ -8,6 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import org.springframework.http.converter.xml.MarshallingHttpMessageConverter;
@@ -50,6 +52,15 @@ public class Application  {
         xmlConverter.setUnmarshaller(xstream);
 
         return new HttpMessageConverters(xmlConverter);
+    }
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer placeholderConfigurer() {
+        PropertySourcesPlaceholderConfigurer c = new PropertySourcesPlaceholderConfigurer();
+        c.setLocation(new ClassPathResource("git.properties"));
+        c.setIgnoreResourceNotFound(true);
+        c.setIgnoreUnresolvablePlaceholders(true);
+        return c;
     }
 
 }

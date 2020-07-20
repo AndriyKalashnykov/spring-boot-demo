@@ -59,11 +59,11 @@ or
 ### Application health, configurations, documentation links
 
 ```
-http://localhost:8081/env
-http://localhost:8081/health
-http://localhost:8081/info
-http://localhost:8081/metrics
-http://localhost:8081/configprops
+http://localhost:8181/actuator/env
+http://localhost:8181/actuator/health
+http://localhost:8181/actuator/health/hotelServiceHealth
+http://localhost:8181/actuator/info
+http://localhost:8181/actuator/metrics
 
 http://localhost:8080/swagger-ui.html
 ```

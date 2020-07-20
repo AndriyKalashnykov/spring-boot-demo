@@ -49,12 +49,13 @@ public class HotelController extends AbstractRestHandler {
     @ApiOperation(value = "Get a paginated list of all hotels.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
     public
     @ResponseBody
-    Page<Hotel> getAllHotel(@ApiParam(value = "The page number (zero-based)", required = true)
+    Page<Hotel> getAllHotels(@ApiParam(value = "The page number (zero-based)", required = true)
                             @RequestParam(value = "page", required = true, defaultValue = DEFAULT_PAGE_NUM) Integer page,
-                            @ApiParam(value = "Tha page size", required = true)
+                             @ApiParam(value = "Tha page size", required = true)
                             @RequestParam(value = "size", required = true, defaultValue = DEFAULT_PAGE_SIZE) Integer size,
-                            HttpServletRequest request, HttpServletResponse response) {
-        log.debug("here");
+                             HttpServletRequest request, HttpServletResponse response) {
+
+        log.debug("getAllHotels()");
 
         return this.hotelService.getAllHotels(page, size);
     }
