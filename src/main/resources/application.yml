@@ -24,7 +24,6 @@ management:
             requests: true
   server:
     port: 8080
-  context-path: "/"
 
   endpoints:
     enabled-by-default: false
@@ -52,11 +51,7 @@ management:
     sessions:
       enabled: true
 
-#default project info followed by actual injected pom-specified values.
-project:
-  name: @project.name@
-  version:  @project.artifactId@
-  description:  "@project.description@"
+# project info followed by actual injected pom-specified values.
 info:
   build:
     artifact: @project.artifactId@
