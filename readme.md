@@ -48,11 +48,13 @@ mvn clean package
 ```
 * Run the service
 ```
-  java -jar -Dspring.profiles.active=default target/spring-boot-rest-example-0.0.1.jar
+  mvn clean package spring-boot:run -Drun.arguments="spring.profiles.active=default"
+  
 ```        
 or
 ```
-  mvn spring-boot:run -Drun.arguments="spring.profiles.active=default"
+  mvn clean package
+  java -jar -Dspring.profiles.active=default target/spring-boot-demo-1.0.jar
 ```
 
 
@@ -108,31 +110,23 @@ open -a /Applications/Google\ Chrome.app http://localhost:8080/swagger-ui.html
   Build project, artifact will be placed in $PWD/target
 
   ```
-  cd spring-boot-rest-example
-  docker run -v ~/.m2:/root/.m2 -v "$PWD":/usr/src -w /usr/src maven:3-jdk-8 mvn clean package
+  cd spring-boot-demo
+  docker run -v ~/.m2:/root/.m2 -v "$PWD":/usr/src -w /usr/src maven:3-jdk-11 mvn clean package
   ```
 
-  #### Build non multi-stage image using existing artifact in $PWD/target
+  #### Build multi-stage image
 
   ```
-  cd spring-boot-rest-example
-  docker rm -f spring-boot-rest-example
-  docker build  -f Dockerfile.maven-host-cache -t spring-boot-rest-example .
+  cd spring-boot-demo
+  docker rm -f spring-boot-demo
+  docker build  -f Dockerfile -t spring-boot-demo .
   ```
-
-  #### Build  multi-stage image  
-
-  ```
-  docker rm -f spring-boot-rest-example
-  docker build  -f Dockerfile.maven-multi-stage-layer-cached -t spring-boot-rest-example .
-  ```
-
 
   #### Test application
 
   ```
   # adding 100 to port number to avoid local conflicts (McAfee runs on 8081)
-  docker run --name spring-boot-rest-example -p 8080:8080 -p 8080:8081 spring-boot-rest-example:latest
+  docker run --name spring-boot-demo -p 8080:8080 -p 8080:8081 spring-boot-demo:latest
 
   curl -X POST 'http://localhost:8080/example/v1/hotels' --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json --stderr -
 
@@ -150,7 +144,7 @@ mvn spring-boot:run -Drun.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,se
 or
 
 ```
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dspring.profiles.active=test -Ddebug -jar target/spring-boot-rest-example-0.0.1.jar
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dspring.profiles.active=test -Ddebug -jar target/spring-boot-demo-1.0.jar
 ```
 
 IntelliJ : Run -> Edit configuration -> Remote.
