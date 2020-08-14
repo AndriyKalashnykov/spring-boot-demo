@@ -31,8 +31,8 @@ This application is packaged as a jar which has Tomcat 8 embedded.
 
 * Clone this repository
 ```
-git clone git@github.com:AndriyKalashnykov/spring-boot-rest-example.git
-cd spring-boot-rest-example
+git clone git@github.com:AndriyKalashnykov/spring-boot-demmo.git
+cd spring-boot-demo
 ```
 * Select JDK
 ```
@@ -99,47 +99,45 @@ http  'http://localhost:8080/example/v1/hotels?page=0&size=10&mediaType=json'
 open -a /Applications/Google\ Chrome.app http://localhost:8080/swagger-ui.html
 ```
 
-
 ### Building docker image
 
 
 #### Optional, local test only: Using local maven cache
 
-  In order to build image quickly by compiling maven project using host OS  maven repo
+In order to build image quickly by compiling maven project using host OS  maven repo
 
-  Build project, artifact will be placed in $PWD/target
+Build project, artifact will be placed in $PWD/target
 
-  ```
-  cd spring-boot-demo
-  docker run -v ~/.m2:/root/.m2 -v "$PWD":/usr/src -w /usr/src maven:3-jdk-11 mvn clean package
-  ```
+```
+cd spring-boot-demo
+docker run -v ~/.m2:/root/.m2 -v "$PWD":/usr/src -w /usr/src maven:3-jdk-11 mvn clean package
+```
 
-  #### Build multi-stage image
+#### Build multi-stage image
 
-  ```
-  cd spring-boot-demo
-  docker rm -f spring-boot-demo
-  docker build  -f Dockerfile -t spring-boot-demo .
-  ```
+```
+cd spring-boot-demo
+docker rm -f spring-boot-demo
+docker build  -f Dockerfile -t spring-boot-demo .
+```
 
-  #### Test application
+#### Test application
 
-  ```
-  # adding 100 to port number to avoid local conflicts (McAfee runs on 8081)
-  docker run --name spring-boot-demo -p 8080:8080 -p 8080:8081 spring-boot-demo:latest
+```
+# adding 100 to port number to avoid local conflicts (McAfee runs on 8081)
+docker run --name spring-boot-demo -p 8080:8080 -p 8080:8081 spring-boot-demo:latest
 
-  curl -X POST 'http://localhost:8080/example/v1/hotels' --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json --stderr -
+curl -X POST 'http://localhost:8080/example/v1/hotels' --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json --stderr -
 
-  curl -X GET --silent 'http://localhost:8080/example/v1/hotels?page=0&size=10' --stderr -  2>&1 | jq .
-
-  ```
+curl -X GET --silent 'http://localhost:8080/example/v1/hotels?page=0&size=10' --stderr -  2>&1 | jq .
+```
 
 ### Attaching to the application from IDE
 
 Run the service with these command line options:
 
 ```
-mvn spring-boot:run -Drun.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"
+mvn clean package spring-boot:run -Drun.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"
 ```
 or
 
@@ -168,18 +166,18 @@ minikube ssh 'docker logs $(docker ps -a -f name=k8s_kube-api --format={{.ID}})'
 
 ### Deploy application to k8s overriding runtime JDK/JRE
 ```
-mvn clean package fabric8:deploy -Dfabric8.generator.from=fabric8/java-alpine-openjdk8-jdk
+mvn clean package fabric8:deploy -Dfabric8.generator.from=fabric8/java-alpine-openjdk11-jdk
 ```
 
 ### Test deployed application
 
 ```
 curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json $(minikube service spring-boot-rest-example --url | sed -n 1p)/example/v1/hotels
-http $(minikube service spring-boot-rest-example --url | sed -n 1p)/example/v1/hotels?page=0&size=10
+http $(minikube service spring-boot-demo --url | sed -n 1p)/example/v1/hotels?page=0&size=10
 
-http $(minikube service spring-boot-rest-example --url | sed -n 2p)/swagger-ui.html
-http $(minikube service spring-boot-rest-example --url | sed -n 2p)/info
-http $(minikube service spring-boot-rest-example --url | sed -n 2p)/health
+http $(minikube service spring-boot-demo --url | sed -n 2p)/swagger-ui.html
+http $(minikube service spring-boot-demo --url | sed -n 2p)/info
+http $(minikube service spring-boot-demo --url | sed -n 2p)/health
 ```
 
 ### Monitor k8s resources
