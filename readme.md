@@ -36,12 +36,13 @@ cd spring-boot-demo
 ```
 * Select JDK
 ```
-sdk use java 8.0.232.hs-adpt
+sdk use java 11.0.5.hs-adpt
 ```
 or
 ```
-sdk use java 11.0.5.hs-adpt
+sdk use java 8.0.232.hs-adpt
 ```
+
 * Build the project and run the tests by running
 ```
 mvn clean package
