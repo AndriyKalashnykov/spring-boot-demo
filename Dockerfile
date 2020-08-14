@@ -10,7 +10,6 @@ RUN mvn dependency:go-offline
 COPY ./pom.xml /tmp/
 COPY ./src /tmp/src/
 COPY ./.git /tmp/.git/
-RUN ls -la /tmp
 
 WORKDIR /tmp/
 RUN mvn clean package
