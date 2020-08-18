@@ -43,11 +43,7 @@ or
 sdk use java 8.0.232.hs-adpt
 ```
 
-* Build the project and run the tests by running
-```
-mvn clean package
-```
-* Run the service
+* Build the project and run the service
 ```
   mvn clean package spring-boot:run -Drun.arguments="spring.profiles.active=default"
   
