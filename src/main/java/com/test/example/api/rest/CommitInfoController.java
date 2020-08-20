@@ -23,13 +23,16 @@ public class CommitInfoController {
     @Value("${git.commit.id.full}")
     private String commitId;
 
+    @Value("${git.commit.time}")
+    private String commitTime;
+
     @RequestMapping(value = "/commitid",
             method = RequestMethod.GET,
             produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody ResponseEntity<?> getCommitId() {
         List<Commit> commits = new ArrayList<Commit>();
-        commits.add(new Commit(commitId, commitMessage, branch));
+        commits.add(new Commit(commitId, commitMessage, branch, commitTime));
         return new ResponseEntity(commits, HttpStatus.OK);
     }
 }

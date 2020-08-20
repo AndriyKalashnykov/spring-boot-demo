@@ -14,16 +14,27 @@ COPY ./.git /tmp/.git/
 WORKDIR /tmp/
 RUN mvn clean package
 
-FROM gcr.io/distroless/java:${JDK_VERSION}-debug
+# extract JAR Layers
+WORKDIR /tmp/target
+RUN java -Djarmode=layertools -jar *.jar extract
+
+FROM gcr.io/distroless/java:${JDK_VERSION}-debug as runtime
 
 USER nonroot:nonroot
+WORKDIR /application
 
-COPY --from=build --chown=nonroot:nonroot /tmp/target/spring-boot-demo-1.0.jar /spring-boot-demo-1.0.jar
+#COPY --from=build --chown=nonroot:nonroot /tmp/target/spring-boot-demo-1.0.jar /spring-boot-demo-1.0.jar
+
+# copy layers from build image to runtime image as nonroot user
+COPY --from=build --chown=nonroot:nonroot /tmp/target/dependencies/ ./
+COPY --from=build --chown=nonroot:nonroot /tmp/target/snapshot-dependencies/ ./
+COPY --from=build --chown=nonroot:nonroot /tmp/target/spring-boot-loader/ ./
+COPY --from=build --chown=nonroot:nonroot /tmp/target/application/ ./
 
 EXPOSE 8080
 EXPOSE 8081
-EXPOSE 8778
-EXPOSE 9779
+#EXPOSE 8778
+#EXPOSE 9779
 
 ENV _JAVA_OPTIONS "-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
 -Djava.security.egd=file:/dev/./urandom \
@@ -31,4 +42,7 @@ ENV _JAVA_OPTIONS "-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
 -Dspring.output.ansi.enabled=ALWAYS \
 -Dspring.profiles.active=default"
 
-ENTRYPOINT ["java", "-jar", "/spring-boot-demo-1.0.jar"]
+#ENTRYPOINT ["java", "-jar", "/spring-boot-demo-1.0.jar"]
+
+# set entrypoint to layered Spring Boot application
+ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]

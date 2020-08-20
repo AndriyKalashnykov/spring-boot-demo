@@ -55,14 +55,16 @@ or
 ```
 
 
-### Application health, configurations, documentation links
+### Application health, configurations, Git commit info, documentation links
 
 ```
-http://localhost:8080/actuator/env
+http://localhost:8080/actuator/info
 http://localhost:8080/actuator/health
+http://localhost:8080/actuator/env
 http://localhost:8080/actuator/health/hotelServiceHealth
 http://localhost:8080/actuator/metrics
-http://localhost:8080/commitid?mediaType=xml
+
+http://localhost:8080/commitid?mediaType=json
 
 http://localhost:8080/swagger-ui.html
 ```

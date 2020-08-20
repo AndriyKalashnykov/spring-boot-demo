@@ -6,10 +6,13 @@ public class Commit {
     private String message;
     private String branch;
 
-    public Commit(String id, String message, String branch) {
+    private String time;
+
+    public Commit(String id, String message, String branch, String time) {
         this.id = id;
         this.message = message;
         this.branch = branch;
+        this.time = time;
     }
 
     public String getId() {
@@ -34,6 +37,14 @@ public class Commit {
 
     public void setBranch(String branch) {
         this.branch = branch;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
     }
 
 }
