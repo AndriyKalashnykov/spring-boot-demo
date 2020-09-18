@@ -16,14 +16,21 @@ Java / Maven / Spring Boot microservice
 
 TODO: for each app/tool add link to the installation page
 
-* macos x
-* sdkman
-* JDK
-* maven 3.x
-* curl
-* http
-* minikube
-* docker
+- macos x
+- [sdkman](https://sdkman.io/install)
+
+    Install OpenJDK 11.x
+    
+    ```shell
+    sdk install java 11.0.8.hs-adpt
+    sdk default java 11.0.8.hs-adpt
+    sdk use java 11.0.8.hs-adpt
+    ```
+- [Apache Maven](https://maven.apache.org/install.html)
+- [Curl](https://help.ubidots.com/en/articles/2165289-learn-how-to-install-run-curl-on-windows-macosx-linux)
+- [HTTPie](https://httpie.org/doc#installation)
+- [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+- [Docker](https://docs.docker.com/engine/install/)
 
 ## Build and Run
 
@@ -39,22 +46,17 @@ cd spring-boot-demo
 * Select JDK
 
 ```shell
-sdk use java 11.0.5.hs-adpt
-```
-
-or
-
-```shell
-sdk use java 8.0.232.hs-adpt
+sdk use java 11.0.8.hs-adpt
 ```
 
 * Build the project and run the service
 
 ```shell
   mvn clean package spring-boot:run -Drun.arguments="spring.profiles.active=default"
+```
   
-```        
 or
+
 ```
   mvn clean package
   java -jar -Dspring.profiles.active=default target/spring-boot-demo-1.0.jar
