@@ -14,9 +14,6 @@ Java / Maven / Spring Boot microservice
 
 ## Pre-requisites
 
-TODO: for each app/tool add link to the installation page
-
-- macos x
 - [sdkman](https://sdkman.io/install)
 
     Install OpenJDK 11.x
