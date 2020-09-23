@@ -1,5 +1,6 @@
-package com.test.example.api.rest;
+package com.test.example.api.rest.hotels;
 
+import com.test.example.api.rest.AbstractRestHandler;
 import com.test.example.domain.Hotel;
 import com.test.example.exception.DataFormatException;
 import com.test.example.service.HotelService;

@@ -10,7 +10,7 @@ AUTH=$(echo -n $DOCKER_LOGIN:$DOCKER_PWD | base64)
 echo "{\"auths\":{\"$REGISTRY_URL\":{\"username\":\"$DOCKER_LOGIN\",\"password\":\"$DOCKER_PWD\"}}}" > config.json
 # cat config.json
 
-docker rm -f spring-boot-demo
+docker image rm -f akalashnykov/spring-boot-demo:latest
 # -v ~/.docker/config.json:/kaniko/.docker/config.json:ro
 time docker run -ti --rm -v `pwd`:/workspace -v `pwd`/config.json:/kaniko/.docker/config.json:ro --env DOCKER_CONFIG=/kaniko/.docker gcr.io/kaniko-project/executor:latest --verbosity INFO --cache=true --cache-ttl=168h --cache-repo andriykalashnykov/spring-boot-demo-cache --dockerfile Dockerfile.maven-host-m2-cache --context dir:///workspace/ --destination andriykalashnykov/spring-boot-demo
 rm config.json

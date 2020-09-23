@@ -2,7 +2,7 @@ package com.test.example.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.example.Application;
-import com.test.example.api.rest.HotelController;
+import com.test.example.api.rest.hotels.HotelController;
 import com.test.example.domain.Hotel;
 
 import org.junit.Before;

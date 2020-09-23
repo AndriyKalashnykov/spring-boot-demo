@@ -165,16 +165,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- integration with Swagger API doc generation http://goo.gl/J5FQDM -->
+        <!-- integration with Swagger API doc generation https://springfox.github.io/springfox/docs/current/ -->
+
         <dependency>
             <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>2.9.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>2.9.0</version>
+            <artifactId>springfox-boot-starter</artifactId>
+            <version>3.0.0</version>
         </dependency>
 
         <dependency>
@@ -274,6 +270,13 @@
                     <layers>
                         <enabled>true</enabled>
                     </layers>
+                    <image>
+                        <name>akalashnykov/${project.artifactId}:latest</name>
+                        <verboseLogging>true</verboseLogging>
+                        <!--<env>
+                            <BP_JVM_VERSION>14.0.1</BP_JVM_VERSION>
+                        </env>-->
+                    </image>
                 </configuration>
             </plugin>
 

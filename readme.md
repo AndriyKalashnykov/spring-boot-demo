@@ -49,7 +49,7 @@ sdk use java 11.0.8.hs-adpt
 * Build the project and run the service
 
 ```shell
-  mvn clean package spring-boot:run -Drun.arguments="spring.profiles.active=default"
+  mvn clean package spring-boot:run -Drun.arguments="spring.profiles.active=default" -DskipTests
 ```
   
 or
@@ -70,7 +70,8 @@ http://localhost:8080/actuator/metrics
 
 http://localhost:8080/commitid?mediaType=json
 
-http://localhost:8080/swagger-ui.html
+http://localhost:8080/v2/api-docs
+http://localhost:8080/swagger-ui/index.html
 ```
 
 ### Microservice API
@@ -106,7 +107,7 @@ http  'http://localhost:8080/example/v1/hotels?page=0&size=10&mediaType=json'
 ### Swagger 2 API docs
 
 ```shell
-open -a /Applications/Google\ Chrome.app http://localhost:8080/swagger-ui.html
+open -a /Applications/Google\ Chrome.app http://localhost:8080/swagger-ui/index.html
 ```
 
 ### Building docker image
@@ -186,7 +187,7 @@ mvn clean package fabric8:deploy -Dfabric8.generator.from=fabric8/java-alpine-op
 curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json $(minikube service spring-boot-rest-example --url | sed -n 1p)/example/v1/hotels
 http $(minikube service spring-boot-demo --url | sed -n 1p)/example/v1/hotels?page=0&size=10
 
-http $(minikube service spring-boot-demo --url | sed -n 2p)/swagger-ui.html
+http $(minikube service spring-boot-demo --url | sed -n 2p)/swagger-ui/index.html
 http $(minikube service spring-boot-demo --url | sed -n 2p)/info
 http $(minikube service spring-boot-demo --url | sed -n 2p)/health
 ```
