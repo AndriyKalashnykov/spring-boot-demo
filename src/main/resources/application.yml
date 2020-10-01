@@ -1,9 +1,9 @@
 spring.jmx:
    enabled: false
 
-spring.datasource:
-    driverClassName: org.h2.Driver
-    url: jdbc:h2:mem:bootexample;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE
+#spring.datasource:
+#    driverClassName: org.h2.Driver
+#    url: jdbc:h2:mem:bootexample;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE
 
 server:
   port: 8080
@@ -55,20 +55,20 @@ management:
 info:
   build:
     artifact: @project.artifactId@
-    name: @project.name@
+#    name: @project.name@
     description: "@project.description@"
     version: @project.version@
 
 hotel.service:
   name: 'default profile'
 
-logging.pattern.console: "%clr(%d{yy-MM-dd E HH:mm:ss.SSS}){blue} %clr(%-5p) %clr(${PID}){faint} %clr(---){faint} %clr([%8.15t]){cyan} %clr(%-40.40logger{0}){blue} %clr(:){red} %clr(%m){faint}%n"
+logging.pattern.console: "%clr(%d{YYYY-MM-dd E HH:mm:ss.SSS}){faint} %clr(%-5p) %clr(${PID}){faint} %clr([%8.15t]){faint} %clr(%c{1.}:%L){cyan} %clr(:){red} %clr(%m){faint}%n"
 logging.level.ROOT: "INFO"
 logging.level.org.springframework.: "INFO"
 logging.level.com.test.example: "DEBUG"
-logging.file.path: "/var/log"
+logging.file.path: "."
 logging.file.name: "application.log"
-logging.pattern.file: "%d{yyyy-MM-dd } [%thread] %-5level %logger{36} - %msg%n"
+logging.pattern.file: "%d{YYYY-MM-dd E HH:mm:ss.SSS} %-5p ${PID} [%8.15t] %c{1.}:%L : %m%n"
 
 #cors.allowed-origins[0]: "*"
 #info.actuator: "http://localhost:8080/actuator"
@@ -90,3 +90,9 @@ logging.pattern.file: "%d{yyyy-MM-dd } [%thread] %-5level %logger{36} - %msg%n"
 #logging:
 #  file: boot_example.log
 #  org.hibernate: INFO
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://mongo-admin:mongo-admin-password@localhost:27017/admin?authSource=admin&authMechanism=SCRAM-SHA-1
+
