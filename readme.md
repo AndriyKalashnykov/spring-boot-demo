@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/AndriyKalashnykov/spring-boot-demo.svg?branch=master)](https://travis-ci.org/AndriyKalashnykov/spring-boot-demo)
+
 # Spring Boot REST microservice
 
 Java / Maven / Spring Boot microservice
