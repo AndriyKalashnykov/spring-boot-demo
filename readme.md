@@ -205,13 +205,3 @@ kubectl top pod --all-namespaces
 
 * Add Spring multi-layer support for the Docker image, be aware of the issue- https://github.com/docker/build-push-action/issues/79
 * Add GitHub workflow - see https://github.com/CodigoPraTodos/cursospratodos/blob/master/.github/workflows/ci-api.yml
-
-
-@Bean
-@Override
-public MongoClient mongoClient() {
-    return new MongoClient(
-        singletonList(new ServerAddress(host, port)),
-        MongoCredential.createCredential(username, database, password.toCharArray()),
-        MongoClientOptions.builder().applicationName(appName).build());
-}
