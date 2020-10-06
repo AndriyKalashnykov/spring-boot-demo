@@ -38,18 +38,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-  
-#   build_with_gpr:
-#       runs-on: ubuntu-latest
-#       steps:
-#         - uses: actions/checkout@v2
-#         - run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u $GITHUB_ACTOR --password-stdin
-#         - run: docker pull docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache-no-buildkit || true
-#         - run: docker build . -t spring-boot-demo --cache-from=docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache-no-buildkit
-#         - run: docker tag spring-boot-demo docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache-no-buildkit && docker push docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache-no-buildkit || true
-
       -
-        name: Build and push - gateway service
+        name: Build and push
         uses: docker/build-push-action@v2
         with:
           context: .
