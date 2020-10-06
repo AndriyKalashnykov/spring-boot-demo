@@ -56,6 +56,6 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gateway-debug:latest
-          cache-from: docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache-no-buildkit
-          cache-to: docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache-no-buildkit
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-demo:latest
+          cache-from: ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-demo-cache
+          cache-to: ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-demo-cache
