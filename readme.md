@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/AndriyKalashnykov/spring-boot-demo.svg?branch=master)](https://travis-ci.org/AndriyKalashnykov/spring-boot-demo)
+[![test](https://github.com/AndriyKalashnykov/spring-boot-demo/workflows/test/badge.svg?branch=master)](https://github.com/AndriyKalashnykov/spring-boot-demo)
 [![ci](https://github.com/AndriyKalashnykov/spring-boot-demo/workflows/ci/badge.svg?branch=master)](https://github.com/AndriyKalashnykov/spring-boot-demo)
 
 # Spring Boot REST microservice
