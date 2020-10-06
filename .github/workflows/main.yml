@@ -52,8 +52,8 @@ jobs:
         name: Build and push - gateway service
         uses: docker/build-push-action@v2
         with:
-          context: ./gateway-service
-          file: ./gateway-service/Dockerfile.debug
+          context: .
+          file: ./Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/gateway-debug:latest
