@@ -1,0 +1,19 @@
+# https://github.com/GoogleContainerTools/skaffold/tree/master/examples
+# https://github.com/GoogleContainerTools/skaffold/blob/master/examples/buildpacks-java/skaffold.yaml
+
+apiVersion: skaffold/v2beta8
+kind: Config
+build:
+  artifacts:
+    - image: spring-boot-demo
+      buildpacks:
+        builder: "gcr.io/paketo-buildpacks/builder:base"
+
+#        builder: "gcr.io/buildpacks/builder:v1"
+#        env:
+#          - GOOGLE_RUNTIME_VERSION=8
+
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild: {}

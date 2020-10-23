@@ -13,6 +13,8 @@ docker rmi -f $(docker images | grep '<none>' | awk '{print $3}') 2>/dev/null
 
 # https://github.com/paketo-buildpacks/spring-boot
 # https://github.com/spring-cloud/spring-cloud-bindings
+
+# pack build spring-boot-demo --builder gcr.io/paketo-buildpacks/builder:base-platform-api-0.3
 pack build spring-boot-demo --builder=gcr.io/paketo-buildpacks/builder:base --path=.
 
 #pack build spring-boot-demo --builder gcr.io/buildpacks/builder:v1 --path=.
