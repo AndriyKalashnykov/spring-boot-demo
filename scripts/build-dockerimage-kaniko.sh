@@ -1,6 +1,7 @@
 #!/bin/bash
 
-pushd ../
+LAUNCH_DIR=$(pwd); SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd $SCRIPT_DIR; cd ..; SCRIPT_PARENT_DIR=$(pwd);
+cd $SCRIPT_PARENT_DIR
 
 echo $(pwd)
 
@@ -17,4 +18,4 @@ rm config.json
 #time docker run -ti --rm -v `pwd`:/workspace -v `pwd`/config.json:/kaniko/.docker/config.json:ro --env DOCKER_CONFIG=/kaniko/.docker gcr.io/kaniko-project/executor:latest --verbosity DEBUG --dockerfile Dockerfile.maven-host-m2-cache --context dir:///workspace/ --no-push
 #docker run -m500M --name spring-boot-demo -p 8080:8080 -p 8181:8081 -p 8778:8778 spring-boot-demo:latest
 
-popd
+cd $LAUNCH_DIR

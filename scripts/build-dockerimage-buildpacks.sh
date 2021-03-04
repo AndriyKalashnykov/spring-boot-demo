@@ -3,7 +3,8 @@
 # https://buildpacks.io/docs/tools/pack/cli/install/
 # brew install buildpacks/tap/pack
 
-pushd ../
+LAUNCH_DIR=$(pwd); SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd $SCRIPT_DIR; cd ..; SCRIPT_PARENT_DIR=$(pwd);
+cd $SCRIPT_PARENT_DIR
 
 docker image rm -f spring-boot-demo:latest
 docker rmi -f $(docker images | grep '<none>' | awk '{print $3}') 2>/dev/null
@@ -22,4 +23,4 @@ pack build spring-boot-demo --builder=gcr.io/paketo-buildpacks/builder:base --pa
 
 docker run --rm --name spring-boot-demo -p 8080:8080 -p 8181:8081 -p 8778:8778 spring-boot-demo:latest
 
-popd
+cd $LAUNCH_DIR

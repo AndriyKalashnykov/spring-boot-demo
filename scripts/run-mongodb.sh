@@ -4,7 +4,8 @@
 # https://medium.com/faun/managing-mongodb-on-docker-with-docker-compose-26bf8a0bbae3
 # https://severalnines.com/database-blog/deploying-mongodb-using-docker
 
-pushd ../
+LAUNCH_DIR=$(pwd); SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd $SCRIPT_DIR; cd ..; SCRIPT_PARENT_DIR=$(pwd);
+cd $SCRIPT_PARENT_DIR
 
 docker run -d --rm --name mongodb -p 27017-27019:27017-27019 -e MONGO_INITDB_DATABASE=admin -e MONGO_INITDB_ROOT_USERNAME=mongo-admin -e MONGO_INITDB_ROOT_PASSWORD=mongo-admin-password mongo:4.2.3
 
@@ -19,4 +20,4 @@ docker run -d --rm --name mongodb -p 27017-27019:27017-27019 -e MONGO_INITDB_DAT
 
 # docker stop mongodb
 
-popd || exit
+cd $LAUNCH_DIR || exit
