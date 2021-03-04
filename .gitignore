@@ -15,3 +15,6 @@ Thumbs.db
 *.gz
 *.tmp
 .factorypath
+config.json
+*.log
+*.log.*

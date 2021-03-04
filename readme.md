@@ -3,17 +3,22 @@
 
 # Spring Boot REST microservice
 
-Java / Maven / Spring Boot microservice
+Java / Maven / Spring Boot microservice / Docker image / Buildkit / Buildpacks / Kaniko / Skaffold/ K8s Deployment / Minikube
 
 * Full integration with the latest **Spring** Framework 2.x.x: inversion of control, dependency injection, etc.
 * Packaging as a single jar with embedded container (tomcat 8)
 * Demonstrates how to set up healthcheck, metrics, info, environment, etc. endpoints automatically on a configured port. Inject your own health / metrics info with a few lines of code.
 * RESTful service using annotation: supports both XML and JSON request / response
 * Exception mapping from application exceptions to the right HTTP response with exception details in the body
-* *Spring Data* Integration with JPA/Hibernate
+* *Spring Data* Integration with JPA/Hibernate / MongoDB
 * CRUD functionality with H2 in-memory data source using Spring *Repository* pattern
 * MockMVC test framework
 * Self-documented APIs: Swagger2 using annotations
+* Buildkit
+* Buildpacks
+* Kaniko
+* Skaffold
+* K8s Deployment / Minikube
 
 ## Pre-requisites
 
@@ -29,8 +34,9 @@ Java / Maven / Spring Boot microservice
 - [Apache Maven](https://maven.apache.org/install.html)
 - [Curl](https://help.ubidots.com/en/articles/2165289-learn-how-to-install-run-curl-on-windows-macosx-linux)
 - [HTTPie](https://httpie.org/doc#installation)
-- [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+- [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
 - [Docker](https://docs.docker.com/engine/install/)
+- [Buildpacks.io](https://buildpacks.io/docs/tools/pack/)  
 - [jq](https://github.com/stedolan/jq/wiki/Installation)
 - [xmllint](https://command-not-found.com/xmllint)
 
@@ -121,19 +127,37 @@ open -a /Applications/Google\ Chrome.app http://localhost:8080/swagger-ui/index.
 
 In order to build image quickly by compiling maven project using host OS  maven repo
 
-Build project, artifact will be placed in $PWD/target
+Build project, artifact will be placed in "$PWD"/target
 
 ```shell
 cd spring-boot-demo
 docker run -v ~/.m2:/root/.m2 -v "$PWD":/usr/src -w /usr/src maven:3-jdk-11 mvn clean package
 ```
 
-#### Build multi-stage image
+#### Build multi-stage image with BuildKit
+
+Docker Build enhancements for 18.09 release introduces a 
+much-needed overhaul of the build architecture. 
+By integrating BuildKit, users should see an improvement on 
+performance, storage management, feature functionality, 
+and security.
 
 ```shell
 cd spring-boot-demo
 docker rm -f spring-boot-demo
-docker build  -f Dockerfile -t spring-boot-demo .
+DOCKER_BUILDKIT=1 docker build  -f Dockerfile -t spring-boot-demo .
+```
+
+#### Build image with Buildpacks
+
+```shell
+./scripts/build-dockerimage-buildpacks.sh
+```
+
+#### Build image with Kaniko
+
+```shell
+./scripts/build-dockerimage-kaniko.sh
 ```
 
 #### Test application
