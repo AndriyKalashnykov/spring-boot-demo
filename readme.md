@@ -53,12 +53,6 @@ git clone git@github.com:AndriyKalashnykov/spring-boot-demo.git
 cd spring-boot-demo
 ```
 
-* Select JDK
-
-```shell
-sdk use java 11.0.8.hs-adpt
-```
-
 * Build the project and run the service
 
 ```shell
