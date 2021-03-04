@@ -31,6 +31,8 @@ Java / Maven / Spring Boot microservice
 - [HTTPie](https://httpie.org/doc#installation)
 - [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
 - [Docker](https://docs.docker.com/engine/install/)
+- [jq](https://github.com/stedolan/jq/wiki/Installation)
+- [xmllint](https://command-not-found.com/xmllint)
 
 ## Build and Run
 
