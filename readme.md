@@ -39,7 +39,7 @@ This application is packaged as a jar which has Tomcat 8 embedded.
 * Clone this repository
   
 ```shell
-git clone git@github.com:AndriyKalashnykov/spring-boot-demmo.git
+git clone git@github.com:AndriyKalashnykov/spring-boot-demo.git
 cd spring-boot-demo
 ```
 
