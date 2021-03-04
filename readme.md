@@ -143,6 +143,14 @@ cd spring-boot-demo
 docker rm -f spring-boot-demo
 DOCKER_BUILDKIT=1 docker build  -f Dockerfile -t spring-boot-demo .
 ```
+#### Login to Image Registry
+
+```shell
+# provide image registry login and password
+DOCKER_LOGIN=
+DOCKER_PWD=
+docker login --username $DOCKER_LOGIN --password $DOCKER_PWD docker.io
+```
 
 #### Build image with Buildpacks
 
