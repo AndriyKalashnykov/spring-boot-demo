@@ -32,13 +32,13 @@ Java / Maven / Spring Boot microservice / Docker image / Buildkit / Buildpacks /
     sdk use java 11.0.8.hs-adpt
     ```
 - [Apache Maven](https://maven.apache.org/install.html)
-- [Curl](https://help.ubidots.com/en/articles/2165289-learn-how-to-install-run-curl-on-windows-macosx-linux)
-- [HTTPie](https://httpie.org/doc#installation)
-- [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)  
-- [Virtualbox](https://www.virtualbox.org/manual/ch02.html)  
 - [Docker](https://docs.docker.com/engine/install/)
+- [Virtualbox](https://www.virtualbox.org/manual/ch02.html)  
+- [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 - [Buildpacks.io](https://buildpacks.io/docs/tools/pack/)  
+- [curl](https://help.ubidots.com/en/articles/2165289-learn-how-to-install-run-curl-on-windows-macosx-linux)
+- [httpie](https://httpie.org/doc#installation)  
 - [jq](https://github.com/stedolan/jq/wiki/Installation)
 - [xmllint](https://command-not-found.com/xmllint)
 
