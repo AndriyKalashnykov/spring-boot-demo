@@ -167,11 +167,11 @@ docker login --username $DOCKER_LOGIN --password $DOCKER_PWD docker.io
 #### Test application
 
 ```shell
+cd ./scripts
 # adding 100 to port number to avoid local conflicts: 8081->8181
 docker run --rm --name spring-boot-demo -p 8080:8080 -p 8181:8081 spring-boot-demo:latest
 
 curl -X POST 'http://localhost:8080/example/v1/hotels' --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json --stderr -
-
 curl -X GET --silent 'http://localhost:8080/example/v1/hotels?page=0&size=10' --stderr -  2>&1 | jq .
 ```
 
@@ -193,7 +193,7 @@ IntelliJ : Run -> Edit configuration -> Remote.
 
 ![IntelliJ IDEA](./img/idea-remote.png)
 
-### Deploy application to k8s
+### Deploy application to K8s
 
 ```shell
 minikube delete --all
@@ -214,7 +214,7 @@ minikube ssh 'docker logs $(docker ps -a -f name=k8s_kube-api --format={{.ID}})'
 mvn clean package fabric8:deploy -Dfabric8.generator.from=fabric8/java-alpine-openjdk11-jdk
 ```
 
-### Test deployed application
+### Test application deployed on K8s
 
 ```shell
 curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json $(minikube service spring-boot-rest-example --url | sed -n 1p)/example/v1/hotels
@@ -225,7 +225,7 @@ http $(minikube service spring-boot-demo --url | sed -n 2p)/info
 http $(minikube service spring-boot-demo --url | sed -n 2p)/health
 ```
 
-### Monitor k8s resources
+### Monitor K8s resources
 
 ```shell
 kubectl get nodes --no-headers | awk '{print $1}' | xargs -I {} sh -c 'echo {}; kubectl describe node {} | grep Allocated -A 5 | grep -ve Event -ve Allocated -ve percent -ve -- ; echo'
