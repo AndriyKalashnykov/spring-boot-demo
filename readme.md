@@ -167,7 +167,7 @@ docker login --username $DOCKER_LOGIN --password $DOCKER_PWD docker.io
 #### Test application
 
 ```shell
-# adding 100 to port number to avoid local conflicts (McAfee runs on 8081)
+# adding 100 to port number to avoid local conflicts: 8081->8181
 docker run --rm --name spring-boot-demo -p 8080:8080 -p 8181:8081 spring-boot-demo:latest
 
 curl -X POST 'http://localhost:8080/example/v1/hotels' --header 'Content-Type: application/json' --header 'Accept: application/json' --data @hotel.json --stderr -
