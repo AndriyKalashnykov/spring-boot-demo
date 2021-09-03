@@ -3,6 +3,8 @@
 build/
 target/
 bin/
+.idea/
+.jpb/
 dependency-reduced-pom.xml
 .classpath
 .project
