@@ -27,9 +27,9 @@ Java / Maven / Spring Boot microservice / Docker image / Buildkit / Buildpacks /
     Install OpenJDK 11.x
     
     ```shell
-    sdk install java 11.0.8.hs-adpt
-    sdk default java 11.0.8.hs-adpt
-    sdk use java 11.0.8.hs-adpt
+    sdk install java 11.0.11.hs-adpt
+    sdk default java 11.0.11.hs-adpt
+    sdk use java 11.0.11.hs-adpt
     ```
 - [Apache Maven](https://maven.apache.org/install.html)
 - [Docker](https://docs.docker.com/engine/install/)
