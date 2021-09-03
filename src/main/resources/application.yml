@@ -74,13 +74,6 @@ logging.pattern.file: "%d{YYYY-MM-dd E HH:mm:ss.SSS} %-5p ${PID} [%8.15t] %c{1.}
 #info.actuator: "http://localhost:8080/actuator"
 #info.swagger: "http://localhost:8080/v2/api-docs"
 
-#---
-#spring:
-#  profiles: test
-#  h2:
-#    console:
-#      enabled: true
-#
 #spring.jpa:
 #    hibernate.ddl-auto: create-drop
 #
@@ -96,3 +89,13 @@ spring:
     mongodb:
       uri: mongodb://mongo-admin:mongo-admin-password@localhost:27017/admin?authSource=admin&authMechanism=SCRAM-SHA-1
 
+---
+spring:
+  profiles: test
+  h2:
+    console:
+      enabled: true
+      path: /console
+      settings:
+        trace: false
+        web-allow-others: false

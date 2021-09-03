@@ -41,6 +41,7 @@ public class HotelController extends AbstractRestHandler {
                             HttpServletRequest request, HttpServletResponse response) {
         Hotel createdHotel = this.hotelService.createHotel(hotel);
         response.setHeader("Location", request.getRequestURL().append("/").append(createdHotel.getId()).toString());
+        log.debug("createHotel()");
     }
 
     @RequestMapping(value = "",
