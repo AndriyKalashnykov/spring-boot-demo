@@ -1,5 +1,5 @@
-[![test](https://github.com/AndriyKalashnykov/spring-boot-demo/workflows/test/badge.svg?branch=master)](https://github.com/AndriyKalashnykov/spring-boot-demo/actions?query=workflow%3Atest)
-[![ci](https://github.com/AndriyKalashnykov/spring-boot-demo/workflows/ci/badge.svg?branch=master)](https://github.com/AndriyKalashnykov/spring-boot-demo/actions?query=workflow%3Aci)
+[![test](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/maven-test.yml/badge.svg)](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/maven-test.yml)
+[![ci](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/main.yml/badge.svg)](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/main.yml)
 [![Hits](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo.svg?view=today-total&style=plastic)](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo/)
 # Spring Boot REST microservice
 
