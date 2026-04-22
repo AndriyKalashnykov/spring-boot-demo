@@ -18,7 +18,7 @@ HADOLINT_VERSION := 2.14.0
 # renovate: datasource=github-releases depName=nektos/act
 ACT_VERSION := 0.2.86
 # renovate: datasource=github-releases depName=aquasecurity/trivy
-TRIVY_VERSION := 0.58.1
+TRIVY_VERSION := v0.70.0
 # renovate: datasource=github-releases depName=gitleaks/gitleaks
 GITLEAKS_VERSION := 8.22.1
 # renovate: datasource=docker depName=minlag/mermaid-cli
