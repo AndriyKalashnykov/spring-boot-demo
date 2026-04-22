@@ -1,0 +1,80 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":semanticCommitType(chore)"
+  ],
+  "enabledManagers": [
+    "maven",
+    "github-actions",
+    "dockerfile",
+    "mise",
+    "custom.regex"
+  ],
+  "commitMessagePrefix": "chore(all): ",
+  "commitMessageAction": "update",
+  "commitBody": "Signed-off-by: Renovate Bot <bot@renovateapp.com>",
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 50,
+  "prHourlyLimit": 0,
+  "platformAutomerge": true,
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "ignoreTests": false,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Makefile tool versions via inline renovate comments",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n[A-Z_]+\\s*:=\\s*(?<currentValue>[^\\s]+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update .mise.toml tool pins via inline renovate comments",
+      "managerFilePatterns": ["/^\\.mise\\.toml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n[a-zA-Z_-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": true,
+    "minimumReleaseAge": "0 days"
+  },
+  "packageRules": [
+    {
+      "description": "Wait 3 days before automerging major updates",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group GitHub Actions into one PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Group Spring Boot dependencies",
+      "matchPackageNames": ["/^org\\.springframework\\.boot/"],
+      "groupName": "Spring Boot"
+    },
+    {
+      "description": "Group Spring Framework dependencies",
+      "matchPackageNames": ["/^org\\.springframework:/"],
+      "groupName": "Spring Framework"
+    },
+    {
+      "description": "Group Jackson dependencies",
+      "matchPackageNames": ["/^com\\.fasterxml\\.jackson/"],
+      "groupName": "Jackson"
+    },
+    {
+      "description": "Group Springfox (Swagger) dependencies",
+      "matchPackageNames": ["/^io\\.springfox/"],
+      "groupName": "Springfox"
+    }
+  ]
+}
