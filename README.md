@@ -5,7 +5,7 @@
 
 # Spring Boot Container Pipeline Reference
 
-A small Spring Boot REST microservice (hotel CRUD over an in-memory H2) used as a reference for four container image build paths — multi-stage Dockerfile with BuildKit, Cloud Native Buildpacks, Kaniko, and the Spring Boot layered jar. Ships with a hardened GitHub Actions pipeline (Trivy image scan, boot-marker smoke test, multi-arch build, cosign keyless signing to GHCR) and a Skaffold-driven Kubernetes deployment flow. The application is deliberately minimal — the value is in the image, CI, and deployment harness around it.
+A small Spring Boot REST microservice (hotel CRUD over an in-memory H2) used as a reference for four container image build paths — multi-stage Dockerfile with BuildKit (consuming Spring Boot's layered jar), Cloud Native Buildpacks via the `pack` CLI, Kaniko, and the Spring Boot Maven plugin's `build-image` goal (Paketo). Ships with a hardened GitHub Actions pipeline (Trivy image scan, boot-marker smoke test, multi-arch build, cosign keyless signing to GHCR) and a Skaffold-driven Kubernetes deployment flow. The application is deliberately minimal — the value is in the image, CI, and deployment harness around it.
 
 ```mermaid
 C4Context
@@ -14,7 +14,7 @@ C4Context
     Person(client, "REST Client", "curl, browser, Postman")
     System(sbd, "Spring Boot service", "REST + embedded H2")
     System_Ext(prom, "Prometheus", "Scrapes /actuator/prometheus")
-    System_Ext(registry, "Docker Hub", "Signed multi-arch image")
+    System_Ext(registry, "GHCR", "Signed multi-arch image")
 
     Rel(client, sbd, "CRUD /example/v1/hotels", "HTTPS / JSON")
     Rel(prom, sbd, "Metrics scrape", "HTTP")
@@ -176,7 +176,7 @@ Create a hotel from the sample payload:
 curl -X POST http://localhost:8080/example/v1/hotels \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
-  --data @hotel.json
+  --data @scripts/hotel.json
 ```
 
 Retrieve the first page of hotels:
@@ -185,11 +185,7 @@ Retrieve the first page of hotels:
 curl -s 'http://localhost:8080/example/v1/hotels?page=0&size=10' | jq .
 ```
 
-Open the Swagger UI:
-
-```
-http://localhost:8080/swagger-ui/index.html
-```
+Open the Swagger UI: <http://localhost:8080/swagger-ui/index.html>.
 
 ## Build & Package
 
@@ -240,7 +236,7 @@ Start the service with JDWP listening on port 5005:
 
 ```bash
 mvn clean package spring-boot:run \
-  -Drun.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"
+  -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"
 ```
 
 Or against the packaged jar:
