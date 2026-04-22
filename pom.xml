@@ -23,7 +23,7 @@
         <start-class>com.test.example.Application</start-class>
         <!-- Local/buildpacks default; CI publishes via docker/metadata-action to ghcr.io/<owner>/<repo>/app -->
         <docker.image.name>${project.artifactId}:${project.version}</docker.image.name>
-        <failsafe.version>3.2.5</failsafe.version>
+        <failsafe.version>3.5.5</failsafe.version>
     </properties>
 
     <dependencies>
