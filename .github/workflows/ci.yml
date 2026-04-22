@@ -70,7 +70,7 @@ jobs:
         run: make build
 
       - name: Upload JAR artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: spring-boot-demo-jar
           path: target/*.jar
@@ -100,7 +100,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5 # unpinned; Renovate pins via helpers:pinGitHubActionDigests
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6 # unpinned; Renovate pins via helpers:pinGitHubActionDigests
         with:
           # Repo-namespace GHCR path (ghcr.io/<owner>/<repo>/<pkg>) — the
           # user-namespace form ghcr.io/<owner>/<pkg> cannot be created by
@@ -192,7 +192,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3 # unpinned; Renovate pins via helpers:pinGitHubActionDigests
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1 # unpinned; Renovate pins via helpers:pinGitHubActionDigests
 
       - name: Sign image with cosign
         env:
