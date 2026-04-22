@@ -1,7 +1,10 @@
-ARG MVN_VERSION=3.9.15
+ARG MVN_VERSION=3.9.9
 ARG JDK_VERSION=11
 
-FROM maven:${MVN_VERSION}-jdk-${JDK_VERSION} as build
+# Docker Hub's maven images moved from the -jdk-N tag family to
+# -eclipse-temurin-N; use the Temurin flavor which is the current
+# convention and matches the project's mise-managed Temurin JDK.
+FROM maven:${MVN_VERSION}-eclipse-temurin-${JDK_VERSION} AS build
 WORKDIR /build
 COPY pom.xml .
 COPY .git .
@@ -18,7 +21,7 @@ RUN mvn clean package
 WORKDIR /tmp/target
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM gcr.io/distroless/java:${JDK_VERSION}-debug as runtime
+FROM gcr.io/distroless/java:${JDK_VERSION}-debug AS runtime
 
 # Numeric UID (distroless nonroot = 65532) — lets Kubernetes verify
 # `runAsNonRoot: true` at admission time, which a named user cannot.
@@ -34,7 +37,7 @@ COPY --from=build --chown=65532:65532 /tmp/target/application/ ./
 EXPOSE 8080
 EXPOSE 8081
 
-ENV _JAVA_OPTIONS "-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
+ENV _JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
 -Djava.security.egd=file:/dev/./urandom \
 -Djava.awt.headless=true -Dfile.encoding=UTF-8 \
 -Dspring.output.ansi.enabled=ALWAYS \
