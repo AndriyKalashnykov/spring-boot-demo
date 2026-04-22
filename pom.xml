@@ -146,6 +146,16 @@
                     <image>
                         <name>${docker.image.name}</name>
                         <verboseLogging>true</verboseLogging>
+                        <env>
+                            <!-- Paketo image-labels buildpack reads BP_OCI_SOURCE and emits
+                                 org.opencontainers.image.source, which GHCR uses to auto-link
+                                 the published package to this repo on first push via the
+                                 spring-boot:build-image path. Canonical CI builds the multi-
+                                 stage Dockerfile (already carries labels via metadata-action);
+                                 this keeps the Paketo-built image consistent for users who run
+                                 scripts/build-dockerimage-maven.sh locally. -->
+                            <BP_OCI_SOURCE>https://github.com/AndriyKalashnykov/spring-boot-demo</BP_OCI_SOURCE>
+                        </env>
                     </image>
                 </configuration>
             </plugin>
