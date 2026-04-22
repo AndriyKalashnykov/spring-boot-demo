@@ -56,6 +56,34 @@ GitHub Actions workflows in `.github/workflows/`:
 
 Required secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (consumed by the `docker` job).
 
+## Upgrade Backlog
+
+Deferred items surfaced by `/upgrade-analysis` 2026-04-22. Review and prune on subsequent runs.
+
+### Wave 3 — Spring Boot 3.x migration (terminal migration for this project)
+
+- [ ] **Spring Boot 2.3.9.RELEASE → 3.x** (EOL since 2022-07). Requires Java 17+. One-step-at-a-time path: 2.3 → 2.7 → 3.x. Resolves ~30 suppressed CVEs in `.trivyignore`.
+- [ ] **Springfox 3.0.0 → springdoc-openapi** (Springfox archived since 2020). The `/v3/api-docs` NPE currently worked around via `/v2/api-docs` in tests and README is a known Springfox bug — disappears with migration.
+- [ ] **JUnit 4 → JUnit 5** — migrate `HotelControllerTest` (existing) to match the `*IT.java` integration suite. Spring Boot 3 drops JUnit Vintage from default classpath.
+- [ ] **XStream → Jackson XML** — pom already pulls `jackson-dataformat-xml`; remove XStream + xmlpull + xpp3_min deps to cut attack surface.
+- [ ] **Drop dead MongoDB config** — `spring.data.mongodb.uri` in `application.yml` is unused (no MongoDB dep in pom).
+- [ ] **Re-bump `google-java-format` to latest** (1.26+) — currently pinned at 1.19.2 (last Java-11-compatible release); un-pin after Java 17.
+- [ ] **Re-run `/architecture-diagrams` review** — Container tech-string `"Spring Boot 2.3.9, Java 11, embedded Tomcat 9"` becomes stale; Renovate cannot update diagram labels.
+- [ ] **Review `.trivyignore` entirely** — most entries are Spring Boot 2.3.9 BOM CVEs that disappear once the BOM moves.
+
+### Wave 2 — infrastructure alignment
+
+- [ ] **Dockerfile ARG / Makefile / `.mise.toml` Maven version skew** — Dockerfile `MVN_VERSION=3.9.9`, Makefile `MAVEN_VER=3.9.15`, `.mise.toml` `maven=3.9.15`. Align on one.
+- [ ] **Dockerfile ARGs lack `# renovate:` annotations** — `ARG MVN_VERSION`, `ARG JDK_VERSION` are invisible to Renovate.
+- [ ] **`scripts/*.sh` hardcoded image tags** — `mongo:4.2.3`, `maven:3-jdk-11`, `paketo-buildpacks/builder:base` are not variables and not Renovate-tracked. Either extract to vars with `# renovate:` comments, or mark the shell scripts as legacy.
+
+### Ongoing
+
+- [ ] **Quarterly `.trivyignore` review** — every suppression has a "resolved when upstream ships fix" clause; entries accumulate otherwise.
+- [ ] **Dependabot alert #21** (1 critical, pre-existing) — GitHub flagged on push 2026-04-22; check Settings → Dependabot.
+- [ ] **`LICENSE` file** — absent; README has no License badge (consistent). Add MIT if publishing the project.
+- [ ] **Orphan `master` branch on remote** — stale, `main` is the default. Delete after confirming nothing references it.
+
 ## Skills
 
 Use the following skills when working on related files:
