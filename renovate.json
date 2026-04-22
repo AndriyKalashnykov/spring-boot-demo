@@ -93,6 +93,19 @@
       "description": "Group springdoc-openapi dependencies",
       "matchPackageNames": ["/^org\\.springdoc/"],
       "groupName": "springdoc-openapi"
+    },
+    {
+      "description": "Group Apache commons dependencies (commons-lang3, commons-collections4, commons-io)",
+      "matchPackageNames": [
+        "commons-io:commons-io",
+        "/^org\\.apache\\.commons:/"
+      ],
+      "groupName": "Apache commons"
+    },
+    {
+      "description": "Label Java packages",
+      "matchCategories": ["java"],
+      "addLabels": ["lang: java"]
     }
   ]
 }
