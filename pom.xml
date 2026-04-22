@@ -5,7 +5,7 @@
 
     <groupId>com.test</groupId>
     <artifactId>spring-boot-demo</artifactId>
-    <version>1.0.0</version>
+    <version>0.0.1</version>
     <packaging>jar</packaging>
     <description>Spring Boot 4 REST APIs demo: Spring Boot, H2, Tomcat, OpenAPI/springdoc, Jackson, Hamcrest, MockMvc
     </description>

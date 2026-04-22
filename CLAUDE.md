@@ -37,7 +37,7 @@ See `make help` for the full target list.
 
 ## Key Details
 
-- **Group/Artifact**: `com.test:spring-boot-demo:1.0.0`
+- **Group/Artifact**: `com.test:spring-boot-demo:0.0.1`
 - **Java version**: 25 (Temurin LTS, pinned in `.mise.toml` + `.java-version`)
 - **Spring Boot**: 4.0.5 (Spring Framework 7, embedded Tomcat 11)
 - **Default branch**: `main`
