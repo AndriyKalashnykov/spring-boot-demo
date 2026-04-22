@@ -84,9 +84,8 @@ jobs:
     timeout-minutes: 30
     needs: [test, integration-test, build]
     # Tag-gated: only publish on v* tag pushes or manual dispatch. Main-branch
-    # pushes run through the gates (scan + smoke) via the dast-style branch
-    # workflow if needed, but don't push to the registry — rotate the
-    # DOCKERHUB_TOKEN before tagging a release.
+    # pushes run through test / build / integration-test but stop short of
+    # the registry push.
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
@@ -106,7 +105,11 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5 # unpinned; Renovate will pin via helpers:pinGitHubActionDigests
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-demo
+          # Repo-namespace GHCR path (ghcr.io/<owner>/<repo>/<pkg>) — the
+          # user-namespace form ghcr.io/<owner>/<pkg> cannot be created by
+          # GITHUB_TOKEN on user accounts (write_package denied). See
+          # /harden-image-pipeline "GHCR namespace rule".
+          images: ghcr.io/${{ github.repository }}/app
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -169,11 +172,12 @@ jobs:
       # =================================================================
       # All gates passed — multi-arch push + cosign keyless signing
       # =================================================================
-      - name: Log in to Docker Hub
+      - name: Log in to GHCR
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
         id: push

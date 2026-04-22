@@ -20,6 +20,8 @@ C4Context
     Rel(sbd, registry, "Image pulled from", "docker pull")
 ```
 
+The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). Published image: `ghcr.io/AndriyKalashnykov/spring-boot-demo/app:<semver>`. Authentication uses `GITHUB_TOKEN` — no separate registry credentials required.
+
 | Component | Technology |
 |-----------|-----------|
 | Language | Java 11 (Temurin) |
@@ -29,7 +31,7 @@ C4Context
 | Metrics | Spring Boot Actuator + Micrometer Prometheus |
 | Tests | JUnit 4 + Spring MockMvc |
 | Build | Maven 3.9, multi-stage Dockerfile, Buildpacks, Kaniko, Skaffold |
-| Runtime | Container image on Docker Hub; Kubernetes deployment |
+| Runtime | Container image on GHCR (`ghcr.io/AndriyKalashnykov/spring-boot-demo/app`); Kubernetes deployment |
 | CI | GitHub Actions, Renovate |
 
 ## Quick Start
@@ -80,7 +82,7 @@ C4Container
     }
 
     System_Ext(prom, "Prometheus", "Metrics scraper (external)")
-    System_Ext(registry, "Docker Hub", "Container image registry")
+    System_Ext(registry, "GHCR", "GitHub Container Registry")
     System_Ext(gha, "GitHub Actions", "CI — test, build, scan, sign, publish")
 
     Rel(client, api, "REST over HTTPS/HTTP", "JSON or XML")
@@ -328,7 +330,7 @@ Dependency updates are managed by [Renovate](https://docs.renovatebot.com/) with
 
 ### Pre-push image hardening
 
-The `docker` job runs these gates **before** any image is pushed to Docker Hub. Any failure blocks the release.
+The `docker` job runs these gates **before** any image is pushed to GHCR. Any failure blocks the release.
 
 | # | Gate | Catches | Tool |
 |---|------|---------|------|
@@ -343,19 +345,14 @@ Buildkit in-manifest attestations (`provenance`, `sbom`) are disabled so the ima
 Verify a published image's signature:
 
 ```bash
-cosign verify docker.io/<DOCKERHUB_USERNAME>/spring-boot-demo:<tag> \
+cosign verify ghcr.io/AndriyKalashnykov/spring-boot-demo/app:<tag> \
   --certificate-identity-regexp 'https://github\.com/AndriyKalashnykov/spring-boot-demo/.+' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
 ### Required Secrets and Variables
 
-| Name | Type | Used by | How to obtain |
-|------|------|---------|---------------|
-| `DOCKERHUB_USERNAME` | Secret | `docker` job | Docker Hub username |
-| `DOCKERHUB_TOKEN` | Secret | `docker` job | Docker Hub → Account Settings → Security → New Access Token |
-
-Set secrets via **Settings → Secrets and variables → Actions → New repository secret**.
+No repository-level secrets are required. The `docker` job authenticates to GHCR using the automatically-scoped `GITHUB_TOKEN` provided by GitHub Actions; cosign keyless signing uses the runner's OIDC identity via Sigstore Fulcio (no signing key material stored anywhere).
 
 ## Contributing
 
