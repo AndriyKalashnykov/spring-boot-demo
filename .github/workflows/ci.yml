@@ -100,7 +100,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6 # unpinned; Renovate pins via helpers:pinGitHubActionDigests
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         with:
           # Repo-namespace GHCR path (ghcr.io/<owner>/<repo>/<pkg>) — the
           # user-namespace form ghcr.io/<owner>/<pkg> cannot be created by
@@ -134,7 +134,7 @@ jobs:
       # Gate 2: Trivy image scan — block on CRITICAL/HIGH fixed CVEs
       # =================================================================
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@master # unpinned; Renovate pins via helpers:pinGitHubActionDigests
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: spring-boot-demo:scan
           scanners: 'vuln,secret,misconfig'
@@ -192,7 +192,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1 # unpinned; Renovate pins via helpers:pinGitHubActionDigests
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Sign image with cosign
         env:

@@ -54,7 +54,7 @@ help:
 
 #deps: @ Verify required tools are installed (java, mvn)
 deps:
-	@command -v java >/dev/null 2>&1 || { echo "Error: Java 11 required. Run: make deps-install"; exit 1; }
+	@command -v java >/dev/null 2>&1 || { echo "Error: Java 25 required. Run: make deps-install"; exit 1; }
 	@command -v $(MVN) >/dev/null 2>&1 || { echo "Error: Maven required. Run: make deps-install"; exit 1; }
 
 #deps-install: @ Install Java and Maven via mise (reads .mise.toml)

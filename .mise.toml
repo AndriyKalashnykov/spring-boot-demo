@@ -1,5 +1,11 @@
 [tools]
+# Pin to the latest Temurin 25 LTS patch that mise's aqua backend has
+# indexed. Renovate's `java-version` datasource reads Adoptium directly
+# and publishes new patches the same day; mise's index catches up in a
+# few days — so newer Renovate PRs (e.g. 25.0.3+9) may fail `mise install`
+# until aqua re-scrapes. Revert to the latest known-good patch when that
+# happens.
 # renovate: datasource=java-version depName=java
-java = "temurin-25.0.3+9.0.LTS"
+java = "temurin-25.0.2+10.0.LTS"
 # renovate: datasource=maven depName=org.apache.maven:apache-maven
 maven = "3.9.15"
