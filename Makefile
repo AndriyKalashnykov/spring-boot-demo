@@ -16,7 +16,7 @@ GJF_VERSION := 1.35.0
 # renovate: datasource=github-releases depName=hadolint/hadolint
 HADOLINT_VERSION := 2.14.0
 # renovate: datasource=github-releases depName=nektos/act
-ACT_VERSION := 0.2.86
+ACT_VERSION := 0.2.87
 # renovate: datasource=github-releases depName=aquasecurity/trivy
 TRIVY_VERSION := 0.58.1
 # renovate: datasource=github-releases depName=gitleaks/gitleaks
