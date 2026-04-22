@@ -1,4 +1,4 @@
-[![CI](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/ci.yml)
+[![CI](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AndriyKalashnykov/spring-boot-demo/actions/workflows/ci.yml)
 [![Hits](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo.svg?view=today-total&style=plastic)](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo/)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://app.renovatebot.com/dashboard#github/AndriyKalashnykov/spring-boot-demo)
 
@@ -240,7 +240,7 @@ Run `make help` to see the full list.
 
 ## CI/CD
 
-GitHub Actions runs on every push to `master`, pull requests, `v*` tags, and manual dispatch.
+GitHub Actions runs on every push to `main`, pull requests, `v*` tags, and manual dispatch.
 
 | Job | Triggers | Purpose |
 |-----|----------|---------|
