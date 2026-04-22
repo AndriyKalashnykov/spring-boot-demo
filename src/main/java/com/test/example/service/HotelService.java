@@ -16,43 +16,41 @@ import org.springframework.stereotype.Service;
 @Service
 public class HotelService {
 
-    private static final Logger log = LoggerFactory.getLogger(HotelService.class);
+  private static final Logger log = LoggerFactory.getLogger(HotelService.class);
 
-    @Autowired
-    private HotelRepository hotelRepository;
+  @Autowired private HotelRepository hotelRepository;
 
-//    @Autowired
-//    CounterService counterService;
-//
-//    @Autowired
-//    GaugeService gaugeService;
+  //    @Autowired
+  //    CounterService counterService;
+  //
+  //    @Autowired
+  //    GaugeService gaugeService;
 
-    public HotelService() {
-    }
+  public HotelService() {}
 
-    public Hotel createHotel(Hotel hotel) {
-        return hotelRepository.save(hotel);
-    }
+  public Hotel createHotel(Hotel hotel) {
+    return hotelRepository.save(hotel);
+  }
 
-    public Hotel getHotel(long id) {
-        return hotelRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException(id));
-    }
+  public Hotel getHotel(long id) {
+    return hotelRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
+  }
 
-    public void updateHotel(Hotel hotel) {
-        hotelRepository.save(hotel);
-    }
+  public void updateHotel(Hotel hotel) {
+    hotelRepository.save(hotel);
+  }
 
-    public void deleteHotel(Long id) {
-        hotelRepository.delete(hotelRepository.findById(id).get());
-    }
+  public void deleteHotel(Long id) {
+    hotelRepository.delete(hotelRepository.findById(id).get());
+  }
 
-    //http://goo.gl/7fxvVf
-    public Page<Hotel> getAllHotels(Integer page, Integer size) {
-        Page pageOfHotels = hotelRepository.findAll(PageRequest.of(page, size));
-        // example of adding to the /metrics
-//        if (size > 50) {
-//            counterService.increment("test.HotelService.getAll.largePayload");
-//        }
-        return pageOfHotels;
-    }
+  // http://goo.gl/7fxvVf
+  public Page<Hotel> getAllHotels(Integer page, Integer size) {
+    Page pageOfHotels = hotelRepository.findAll(PageRequest.of(page, size));
+    // example of adding to the /metrics
+    //        if (size > 50) {
+    //            counterService.increment("test.HotelService.getAll.largePayload");
+    //        }
+    return pageOfHotels;
+  }
 }

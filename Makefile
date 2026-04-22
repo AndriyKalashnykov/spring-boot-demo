@@ -209,7 +209,7 @@ image-push: image-build
 	@docker push $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)
 
 #ci: @ Full local CI pipeline
-ci: deps lint test integration-test build
+ci: deps format-check lint test integration-test build
 	@echo "Local CI pipeline passed."
 
 #ci-run: @ Run GitHub Actions workflows locally via act

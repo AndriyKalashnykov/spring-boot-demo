@@ -1,10 +1,10 @@
 package com.test.example.domain;
 
+import java.io.Serializable;
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.io.Serializable;
 
 @Entity
 @Table(name = "hotel")
@@ -12,80 +12,82 @@ import java.io.Serializable;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Hotel implements Serializable {
 
-    @Id
-    @GeneratedValue()
-    private long id;
+  @Id @GeneratedValue() private long id;
 
-    @Column(nullable = false)
-    private String name;
+  @Column(nullable = false)
+  private String name;
 
-    @Column()
-    private String description;
+  @Column() private String description;
 
-    @Column()
-    String city;
+  @Column() String city;
 
-    @Column()
-    private int rating;
+  @Column() private int rating;
 
-    public Hotel() {
-    }
+  public Hotel() {}
 
-    public Hotel(String name, String description, int rating) {
-        this.name = name;
-        this.description = description;
-        this.rating = rating;
-    }
+  public Hotel(String name, String description, int rating) {
+    this.name = name;
+    this.description = description;
+    this.rating = rating;
+  }
 
-    public long getId() {
-        return this.id;
-    }
+  public long getId() {
+    return this.id;
+  }
 
-    // for tests ONLY
-    public void setId(long id) {
-        this.id = id;
-    }
+  // for tests ONLY
+  public void setId(long id) {
+    this.id = id;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public String getDescription() {
-        return description;
-    }
+  public String getDescription() {
+    return description;
+  }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-    public int getRating() {
-        return rating;
-    }
+  public int getRating() {
+    return rating;
+  }
 
-    public void setRating(int rating) {
-        this.rating = rating;
-    }
+  public void setRating(int rating) {
+    this.rating = rating;
+  }
 
-    public String getCity() {
-        return city;
-    }
+  public String getCity() {
+    return city;
+  }
 
-    public void setCity(String city) {
-        this.city = city;
-    }
+  public void setCity(String city) {
+    this.city = city;
+  }
 
-    @Override
-    public String toString() {
-        return "Hotel {" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", city='" + city + '\'' +
-                ", rating=" + rating +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "Hotel {"
+        + "id="
+        + id
+        + ", name='"
+        + name
+        + '\''
+        + ", description='"
+        + description
+        + '\''
+        + ", city='"
+        + city
+        + '\''
+        + ", rating="
+        + rating
+        + '}';
+  }
 }
