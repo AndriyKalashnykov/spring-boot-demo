@@ -21,10 +21,15 @@ RUN mvn clean package
 WORKDIR /tmp/target
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM gcr.io/distroless/java:${JDK_VERSION}-debug AS runtime
+FROM eclipse-temurin:${JDK_VERSION}-jre-jammy AS runtime
 
-# Numeric UID (distroless nonroot = 65532) — lets Kubernetes verify
-# `runAsNonRoot: true` at admission time, which a named user cannot.
+# Eclipse Temurin stays actively CVE-patched; the older gcr.io/distroless/java:11
+# baseline is on an EOL Debian 11 and accumulated 50+ HIGH/CRITICAL CVEs.
+# Create a non-root user with a numeric UID so Kubernetes can verify
+# `runAsNonRoot: true` at admission time.
+RUN groupadd -g 65532 -r nonroot \
+ && useradd -u 65532 -g nonroot -r -s /usr/sbin/nologin -M nonroot
+
 USER 65532:65532
 WORKDIR /application
 
