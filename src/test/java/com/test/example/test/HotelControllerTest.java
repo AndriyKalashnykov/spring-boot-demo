@@ -1,66 +1,50 @@
 package com.test.example.test;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.example.Application;
-import com.test.example.api.rest.hotels.HotelController;
 import com.test.example.domain.Hotel;
 import java.util.Random;
-import java.util.regex.Pattern;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.MockitoAnnotations;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-public class HotelControllerTest {
+class HotelControllerTest {
 
-  private static final String RESOURCE_LOCATION_PATTERN =
-      "http://localhost/example/v1/hotels/[0-9]+";
+  // Ant-style pattern (Spring MockMvc's redirectedUrlPattern uses Ant globs, not regex)
+  private static final String RESOURCE_LOCATION_PATTERN = "http://localhost/example/v1/hotels/*";
 
-  @InjectMocks HotelController controller;
-
-  @Autowired WebApplicationContext context;
+  @Autowired private WebApplicationContext context;
 
   private MockMvc mvc;
 
-  @Before
-  public void initTests() {
-    MockitoAnnotations.initMocks(this);
+  @BeforeEach
+  void initTests() {
     mvc = MockMvcBuilders.webAppContextSetup(context).build();
   }
 
-  // @Test
-  public void shouldHaveEmptyDB() throws Exception {
-    mvc.perform(get("/example/v1/hotels").accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(0)));
-  }
-
   @Test
-  public void shouldCreateRetrieveDelete() throws Exception {
+  void shouldCreateRetrieveDelete() throws Exception {
     Hotel r1 = mockHotel("shouldCreateRetrieveDelete");
     byte[] r1Json = toJson(r1);
 
-    // CREATE
     MvcResult result =
         mvc.perform(
                 post("/example/v1/hotels")
@@ -72,36 +56,25 @@ public class HotelControllerTest {
             .andReturn();
     long id = getResourceIdFromUrl(result.getResponse().getRedirectedUrl());
 
-    // RETRIEVE
     mvc.perform(get("/example/v1/hotels/" + id).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is((int) id)))
-        .andExpect(jsonPath("$.name", is(r1.getName())))
-        .andExpect(jsonPath("$.city", is(r1.getCity())))
-        .andExpect(jsonPath("$.description", is(r1.getDescription())))
-        .andExpect(jsonPath("$.rating", is(r1.getRating())));
+        .andExpect(jsonPath("$.id", Matchers.is((int) id)))
+        .andExpect(jsonPath("$.name", Matchers.is(r1.getName())))
+        .andExpect(jsonPath("$.city", Matchers.is(r1.getCity())))
+        .andExpect(jsonPath("$.description", Matchers.is(r1.getDescription())))
+        .andExpect(jsonPath("$.rating", Matchers.is(r1.getRating())));
 
-    // DELETE
     mvc.perform(delete("/example/v1/hotels/" + id)).andExpect(status().isNoContent());
 
-    // RETRIEVE should fail
-    mvc.perform(get("/example/v1/hotels/" + 100L).accept(MediaType.APPLICATION_JSON))
+    mvc.perform(get("/example/v1/hotels/" + Long.MAX_VALUE).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
-
-    // todo: you can test the 404 error body too.
-
-    /*
-    JSONAssert.assertEquals(
-      "{foo: 'bar', baz: 'qux'}",
-      JSONObject.fromObject("{foo: 'bar', baz: 'xyzzy'}"));
-     */
   }
 
   @Test
-  public void shouldCreateAndUpdateAndDelete() throws Exception {
+  void shouldCreateAndUpdateAndDelete() throws Exception {
     Hotel r1 = mockHotel("shouldCreateAndUpdate");
     byte[] r1Json = toJson(r1);
-    // CREATE
+
     MvcResult result =
         mvc.perform(
                 post("/example/v1/hotels")
@@ -117,39 +90,30 @@ public class HotelControllerTest {
     r2.setId(id);
     byte[] r2Json = toJson(r2);
 
-    // UPDATE
-    result =
-        mvc.perform(
-                put("/example/v1/hotels/" + id)
-                    .content(r2Json)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNoContent())
-            .andReturn();
+    mvc.perform(
+            put("/example/v1/hotels/" + id)
+                .content(r2Json)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNoContent());
 
-    // RETRIEVE updated
     mvc.perform(get("/example/v1/hotels/" + id).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id", is((int) id)))
-        .andExpect(jsonPath("$.name", is(r2.getName())))
-        .andExpect(jsonPath("$.city", is(r2.getCity())))
-        .andExpect(jsonPath("$.description", is(r2.getDescription())))
-        .andExpect(jsonPath("$.rating", is(r2.getRating())));
+        .andExpect(jsonPath("$.id", Matchers.is((int) id)))
+        .andExpect(jsonPath("$.name", Matchers.is(r2.getName())))
+        .andExpect(jsonPath("$.city", Matchers.is(r2.getCity())))
+        .andExpect(jsonPath("$.description", Matchers.is(r2.getDescription())))
+        .andExpect(jsonPath("$.rating", Matchers.is(r2.getRating())));
 
-    // DELETE
     mvc.perform(delete("/example/v1/hotels/" + id)).andExpect(status().isNoContent());
   }
 
-  /*
-   ******************************
-   */
-
-  private long getResourceIdFromUrl(String locationUrl) {
+  private static long getResourceIdFromUrl(String locationUrl) {
     String[] parts = locationUrl.split("/");
-    return Long.valueOf(parts[parts.length - 1]);
+    return Long.parseLong(parts[parts.length - 1]);
   }
 
-  private Hotel mockHotel(String prefix) {
+  private static Hotel mockHotel(String prefix) {
     Hotel r = new Hotel();
     r.setCity(prefix + "_city");
     r.setDescription(prefix + "_description");
@@ -158,18 +122,7 @@ public class HotelControllerTest {
     return r;
   }
 
-  private byte[] toJson(Object r) throws Exception {
-    ObjectMapper map = new ObjectMapper();
-    return map.writeValueAsString(r).getBytes();
-  }
-
-  // match redirect header URL (aka Location header)
-  private static ResultMatcher redirectedUrlPattern(final String expectedUrlPattern) {
-    return new ResultMatcher() {
-      public void match(MvcResult result) {
-        Pattern pattern = Pattern.compile("\\A" + expectedUrlPattern + "\\z");
-        assertTrue(pattern.matcher(result.getResponse().getRedirectedUrl()).find());
-      }
-    };
+  private static byte[] toJson(Object r) throws Exception {
+    return new ObjectMapper().writeValueAsString(r).getBytes();
   }
 }

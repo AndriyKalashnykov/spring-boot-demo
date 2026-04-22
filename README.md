@@ -24,12 +24,12 @@ The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). P
 
 | Component | Technology |
 |-----------|-----------|
-| Language | Java 11 (Temurin) |
-| Framework | Spring Boot 2.3.9 (Spring Framework 5.x, embedded Tomcat 9) |
-| Persistence | Spring Data JPA + Hibernate, H2 in-memory |
-| API | REST (JSON and XML) + Springfox 3.0 (Swagger 2) |
+| Language | Java 25 (Temurin LTS) |
+| Framework | Spring Boot 4.0.5 (Spring Framework 7, embedded Tomcat 11) |
+| Persistence | Spring Data JPA + Hibernate 7, H2 2.x in-memory |
+| API | REST (JSON and XML via Jackson) + springdoc-openapi 3 |
 | Metrics | Spring Boot Actuator + Micrometer Prometheus |
-| Tests | JUnit 4 + Spring MockMvc |
+| Tests | JUnit 5 + Spring MockMvc + TestRestTemplate (via `spring-boot-resttestclient`) |
 | Build | Maven 3.9, multi-stage Dockerfile, Buildpacks, Kaniko, Skaffold |
 | Runtime | Container image on GHCR (`ghcr.io/AndriyKalashnykov/spring-boot-demo/app`); Kubernetes deployment |
 | CI | GitHub Actions, Renovate |
@@ -37,7 +37,7 @@ The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). P
 ## Quick Start
 
 ```bash
-make deps-install   # install Java 11 + Maven via mise (first run only)
+make deps-install   # install Java 25 + Maven via mise (first run only)
 make test           # run unit tests
 make run            # start the application on http://localhost:8080
 # Open http://localhost:8080/swagger-ui/index.html
@@ -49,7 +49,7 @@ make run            # start the application on http://localhost:8080
 |------|---------|---------|
 | [GNU Make](https://www.gnu.org/software/make/) | 3.81+ | Build orchestration |
 | [Git](https://git-scm.com/) | 2.0+ | Source control |
-| [JDK](https://adoptium.net/) | 11 (Temurin) | Java runtime and compiler |
+| [JDK](https://adoptium.net/) | 25 (Temurin LTS) | Java runtime and compiler |
 | [Maven](https://maven.apache.org/) | 3.9+ | Build and dependency management |
 | [Docker](https://www.docker.com/) | 20.10+ | Image build and local container runs |
 | [mise](https://mise.jdx.dev/) | latest | Java/Maven version management |
@@ -66,7 +66,7 @@ make deps-install
 
 ## Architecture
 
-The service is a single Spring Boot jar exposing a REST API for hotel records, backed by an in-memory H2 database. Actuator exposes operational endpoints (health, metrics, Prometheus scrape) on the same port. Springfox generates Swagger 2 documentation surfaced through Swagger UI.
+The service is a single Spring Boot jar exposing a REST API for hotel records, backed by an in-memory H2 database. Actuator exposes operational endpoints (health, metrics, Prometheus scrape) on the same port. springdoc-openapi generates an OpenAPI 3 document surfaced through Swagger UI.
 
 ### Container view
 
@@ -77,7 +77,7 @@ C4Container
     Person(client, "REST Client", "curl, httpie, browser, Postman")
 
     System_Boundary(sys, "Spring Boot service") {
-        Container(api, "REST Service", "Spring Boot 2.3.9, Java 11, embedded Tomcat 9", "CRUD /example/v1/hotels, Actuator, Swagger UI")
+        Container(api, "REST Service", "Spring Boot 4.0, Java 25, embedded Tomcat 11", "CRUD /example/v1/hotels, Actuator, Swagger UI")
         ContainerDb(db, "H2 Database", "In-memory JPA/Hibernate", "Hotel entities (transient)")
     }
 
@@ -165,7 +165,7 @@ API documentation:
 | Path | Format |
 |------|--------|
 | `/swagger-ui/index.html` | Swagger UI |
-| `/v2/api-docs` | Swagger 2 JSON (Springfox native; `/v3/api-docs` has a known Springfox NPE) |
+| `/v3/api-docs` | OpenAPI 3 JSON (served by springdoc-openapi) |
 
 ### Example requests
 
@@ -203,6 +203,8 @@ Run the packaged jar directly:
 ```bash
 java -jar -Dspring.profiles.active=default target/spring-boot-demo-1.0.0.jar
 ```
+
+> Under the hood the entrypoint is `org.springframework.boot.loader.launch.JarLauncher` (Spring Boot 3.2+ sub-package); the `-jar` shortcut above dispatches to it automatically.
 
 ### Build the Docker image
 

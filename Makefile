@@ -12,7 +12,7 @@ CURRENTTAG  := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 # renovate: datasource=maven depName=org.apache.maven:apache-maven
 MAVEN_VER := 3.9.15
 # renovate: datasource=github-releases depName=google/google-java-format extractVersion=^v(?<version>.*)$
-GJF_VERSION := 1.19.2
+GJF_VERSION := 1.35.0
 # renovate: datasource=github-releases depName=hadolint/hadolint
 HADOLINT_VERSION := 2.14.0
 # renovate: datasource=github-releases depName=nektos/act

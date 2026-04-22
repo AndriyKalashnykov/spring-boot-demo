@@ -1,11 +1,11 @@
 # CLAUDE.md
 
-Spring Boot 2.x REST microservice demo with Docker, Buildpacks, Kaniko, Skaffold, and K8s deployment.
+Spring Boot 4 REST microservice demo — hardened container pipeline reference with Docker, Buildpacks, Kaniko, Skaffold, and K8s deployment.
 
 ## Build & Test Commands
 
 ```bash
-make deps-install       # Install Java 11 + Maven via mise (first run)
+make deps-install       # Install Java 25 + Maven via mise (first run)
 make build              # Build JAR (skips tests)
 make run                # Start the application locally
 make image-build        # Build Docker image
@@ -37,10 +37,10 @@ See `make help` for the full target list.
 ## Key Details
 
 - **Group/Artifact**: `com.test:spring-boot-demo:1.0.0`
-- **Java version**: 11 (Temurin, pinned in `.mise.toml` + `.java-version`)
-- **Spring Boot**: 2.3.9.RELEASE (Spring Framework 5.x, embedded Tomcat 9)
+- **Java version**: 25 (Temurin LTS, pinned in `.mise.toml` + `.java-version`)
+- **Spring Boot**: 4.0.5 (Spring Framework 7, embedded Tomcat 11)
 - **Default branch**: `main`
-- **Endpoints**: REST CRUD at `/example/v1/hotels`, Swagger at `/swagger-ui/index.html`, Swagger 2 JSON at `/v2/api-docs`, Actuator at `/actuator/*`
+- **Endpoints**: REST CRUD at `/example/v1/hotels`, Swagger UI at `/swagger-ui/index.html`, OpenAPI 3 JSON at `/v3/api-docs`, Actuator at `/actuator/*`
 - **Database**: H2 in-memory (JPA/Hibernate)
 - **Version manager**: mise (manages Java + Maven)
 - **Architecture diagrams**: Mermaid C4Container + sequence block inline in README; validated by `make mermaid-lint` (Docker `minlag/mermaid-cli`, pinned in `Makefile`). Wired into `make static-check`.
@@ -58,29 +58,35 @@ No repo-level secrets required — the `docker` job uses `GITHUB_TOKEN` for GHCR
 
 ## Upgrade Backlog
 
-Deferred items surfaced by `/upgrade-analysis` 2026-04-22. Review and prune on subsequent runs.
+### Done — Spring Boot 4 migration (2026-04-22)
 
-### Wave 3 — Spring Boot 3.x migration (terminal migration for this project)
+Resolved by the SB 2.3.9 → 4.0.5 migration:
 
-- [ ] **Spring Boot 2.3.9.RELEASE → 3.x** (EOL since 2022-07). Requires Java 17+. One-step-at-a-time path: 2.3 → 2.7 → 3.x. Resolves ~30 suppressed CVEs in `.trivyignore`.
-- [ ] **Springfox 3.0.0 → springdoc-openapi** (Springfox archived since 2020). The `/v3/api-docs` NPE currently worked around via `/v2/api-docs` in tests and README is a known Springfox bug — disappears with migration.
-- [ ] **JUnit 4 → JUnit 5** — migrate `HotelControllerTest` (existing) to match the `*IT.java` integration suite. Spring Boot 3 drops JUnit Vintage from default classpath.
-- [ ] **XStream → Jackson XML** — pom already pulls `jackson-dataformat-xml`; remove XStream + xmlpull + xpp3_min deps to cut attack surface.
-- [ ] **Drop dead MongoDB config** — `spring.data.mongodb.uri` in `application.yml` is unused (no MongoDB dep in pom).
-- [ ] **Re-bump `google-java-format` to latest** (1.26+) — currently pinned at 1.19.2 (last Java-11-compatible release); un-pin after Java 17.
-- [ ] **Re-run `/architecture-diagrams` review** — Container tech-string `"Spring Boot 2.3.9, Java 11, embedded Tomcat 9"` becomes stale; Renovate cannot update diagram labels.
-- [ ] **Review `.trivyignore` entirely** — most entries are Spring Boot 2.3.9 BOM CVEs that disappear once the BOM moves.
+- Spring Boot 2.3.9.RELEASE → 4.0.5, Java 11 → 25 (Temurin LTS)
+- Springfox → springdoc-openapi 3
+- XStream + xmlpull + xpp3 → Jackson XML (attack surface trimmed, `xmlpull-XmlPullParserFactory` missing-class bug gone)
+- javax.* → jakarta.* across all source
+- JUnit 4 → JUnit 5 (`HotelControllerTest` rewritten; tests now homogeneous)
+- H2 1.4.x → H2 2.x (BOM-managed)
+- JsonPath, commons-collections4, Jackson versions now all BOM-managed
+- Dead MongoDB config dropped from `application.yml`
+- `spring.profiles: test` legacy syntax → `spring.config.activate.on-profile: test`
+- Custom `PropertySourcesPlaceholderConfigurer` bean dropped (no longer needed — `CommitInfoController` reads `git.properties` directly, so the `${VAR}` recursion bug stays fixed)
+- `.trivyignore` file deleted — 0 CVEs on Spring Boot 4.0.5 image
+- `google-java-format` bumped to 1.35.0 (Java 17+ required — now OK with Java 25)
+- Runtime base image: `eclipse-temurin:25-jre-jammy`, numeric UID 65532
+- `JarLauncher` path updated to `org.springframework.boot.loader.launch.JarLauncher` (relocated in 3.2+)
+- `HotelRepository` now extends both `CrudRepository` + `PagingAndSortingRepository` (Spring Data 3 split)
+- `HealthIndicator` / `Health` / `Status` moved to `org.springframework.boot.health.contributor`
+- `TestRestTemplate` now in its own module `spring-boot-resttestclient` with `@AutoConfigureTestRestTemplate`
+- `@DataJpaTest` moved to `spring-boot-data-jpa-test` starter
+- `WebConfig` stripped of removed `favorPathExtension` / `useJaf`, no longer has spurious `@EnableWebMvc`
 
-### Wave 2 — infrastructure alignment
+### Deferred
 
-- [ ] **Dockerfile ARG / Makefile / `.mise.toml` Maven version skew** — Dockerfile `MVN_VERSION=3.9.9`, Makefile `MAVEN_VER=3.9.15`, `.mise.toml` `maven=3.9.15`. Align on one.
-- [ ] **Dockerfile ARGs lack `# renovate:` annotations** — `ARG MVN_VERSION`, `ARG JDK_VERSION` are invisible to Renovate.
-- [ ] **`scripts/*.sh` hardcoded image tags** — `mongo:4.2.3`, `maven:3-jdk-11`, `paketo-buildpacks/builder:base` are not variables and not Renovate-tracked. Either extract to vars with `# renovate:` comments, or mark the shell scripts as legacy.
-
-### Ongoing
-
-- [ ] **Quarterly `.trivyignore` review** — every suppression has a "resolved when upstream ships fix" clause; entries accumulate otherwise.
-- [ ] **Dependabot alert #21** (1 critical, pre-existing) — GitHub flagged on push 2026-04-22; check Settings → Dependabot.
+- [ ] **Dockerfile ARGs lack `# renovate:` annotations** — `ARG MVN_VERSION`, `ARG JDK_VERSION` still invisible to Renovate.
+- [ ] **`scripts/*.sh` hardcoded image tags** — `mongo:4.2.3`, `maven:3-jdk-11`, `paketo-buildpacks/builder:base` are not variables and not Renovate-tracked. Extract or mark as legacy.
+- [ ] **Dependabot alert #21** (1 critical, pre-existing) — check Settings → Dependabot; the SB 4 migration may have resolved it.
 - [ ] **`LICENSE` file** — absent; README has no License badge (consistent). Add MIT if publishing the project.
 - [ ] **Orphan `master` branch on remote** — stale, `main` is the default. Delete after confirming nothing references it.
 

@@ -7,8 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestRestTemplate
 @ActiveProfiles("test")
 class OpenApiIT {
 
@@ -25,24 +27,22 @@ class OpenApiIT {
 
   @Test
   void apiDocsAdvertiseHotelResource() {
-    // Springfox 3.0.0 ships both /v2/api-docs (Swagger 2) and /v3/api-docs
-    // (OpenAPI 3). The v3 mapper has a known NPE bug for some configs — use
-    // v2 as the stable endpoint.
+    // springdoc-openapi exposes the OpenAPI 3 JSON at /v3/api-docs.
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(List.of(MediaType.APPLICATION_JSON));
     ResponseEntity<String> response =
         restTemplate.exchange(
-            "/v2/api-docs", HttpMethod.GET, new HttpEntity<>(headers), String.class);
+            "/v3/api-docs", HttpMethod.GET, new HttpEntity<>(headers), String.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     String body = response.getBody();
     assertNotNull(body);
-    assertTrue(
-        body.contains("/example/v1/hotels"),
-        "API doc should list /example/v1/hotels — guards against Springfox regressions");
+    assertTrue(body.contains("/example/v1/hotels"), "OpenAPI doc should list /example/v1/hotels");
   }
 
   @Test
   void swaggerUiIsServed() {
+    // springdoc-openapi-starter-webmvc-ui redirects /swagger-ui.html ->
+    // /swagger-ui/index.html. Follow the redirect.
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(List.of(MediaType.TEXT_HTML, MediaType.ALL));
     ResponseEntity<String> response =

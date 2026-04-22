@@ -1,5 +1,5 @@
-ARG MVN_VERSION=3.9.9
-ARG JDK_VERSION=11
+ARG MVN_VERSION=3.9.15
+ARG JDK_VERSION=25
 
 # Docker Hub's maven images moved from the -jdk-N tag family to
 # -eclipse-temurin-N; use the Temurin flavor which is the current
@@ -23,8 +23,7 @@ RUN java -Djarmode=layertools -jar *.jar extract
 
 FROM eclipse-temurin:${JDK_VERSION}-jre-jammy AS runtime
 
-# Eclipse Temurin stays actively CVE-patched; the older gcr.io/distroless/java:11
-# baseline is on an EOL Debian 11 and accumulated 50+ HIGH/CRITICAL CVEs.
+# Eclipse Temurin 25 LTS (Ubuntu Jammy) — actively CVE-patched upstream.
 # Create a non-root user with a numeric UID so Kubernetes can verify
 # `runAsNonRoot: true` at admission time.
 RUN groupadd -g 65532 -r nonroot \
@@ -48,5 +47,5 @@ ENV _JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
 -Dspring.output.ansi.enabled=ALWAYS \
 -Dspring.profiles.active=default"
 
-# set entrypoint to layered Spring Boot application
-ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
+# Spring Boot 3.2+ relocated JarLauncher to the .launch sub-package
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

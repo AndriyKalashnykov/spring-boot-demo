@@ -1,9 +1,6 @@
-spring.jmx:
-   enabled: false
-
-#spring.datasource:
-#    driverClassName: org.h2.Driver
-#    url: jdbc:h2:mem:bootexample;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE
+spring:
+  jmx:
+    enabled: false
 
 server:
   port: 8080
@@ -12,7 +9,6 @@ server:
   servlet:
     context-path: "/"
 
-#management endpoints on a separate port
 management:
   metrics:
     enable:
@@ -24,7 +20,6 @@ management:
             requests: true
   server:
     port: 8080
-
   endpoints:
     enabled-by-default: false
     web:
@@ -51,47 +46,33 @@ management:
     sessions:
       enabled: true
 
-# project info followed by actual injected pom-specified values.
 info:
   build:
-    artifact: @project.artifactId@
-#    name: @project.name@
+    artifact: "@project.artifactId@"
     description: "@project.description@"
-    version: @project.version@
+    version: "@project.version@"
 
-hotel.service:
-  name: 'default profile'
+hotel:
+  service:
+    name: 'default profile'
 
-logging.pattern.console: "%clr(%d{YYYY-MM-dd E HH:mm:ss.SSS}){faint} %clr(%-5p) %clr(${PID}){faint} %clr([%8.15t]){faint} %clr(%c{1.}:%L){cyan} %clr(:){red} %clr(%m){faint}%n"
-logging.level.ROOT: "INFO"
-logging.level.org.springframework.: "INFO"
-logging.level.com.test.example: "DEBUG"
-logging.file.path: "."
-logging.file.name: "application.log"
-logging.pattern.file: "%d{YYYY-MM-dd E HH:mm:ss.SSS} %-5p ${PID} [%8.15t] %c{1.}:%L : %m%n"
-
-#cors.allowed-origins[0]: "*"
-#info.actuator: "http://localhost:8080/actuator"
-#info.swagger: "http://localhost:8080/v2/api-docs"
-
-#spring.jpa:
-#    hibernate.ddl-auto: create-drop
-#
-#hotel.service:
-#  name: 'test profile:'
-#
-#logging:
-#  file: boot_example.log
-#  org.hibernate: INFO
-
-spring:
-  data:
-    mongodb:
-      uri: mongodb://mongo-admin:mongo-admin-password@localhost:27017/admin?authSource=admin&authMechanism=SCRAM-SHA-1
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    com.test.example: DEBUG
+  file:
+    path: "."
+    name: "application.log"
+  pattern:
+    console: "%clr(%d{YYYY-MM-dd E HH:mm:ss.SSS}){faint} %clr(%-5p) %clr(${PID}){faint} %clr([%8.15t]){faint} %clr(%c{1}:%L){cyan} %clr(:){red} %clr(%m){faint}%n"
+    file: "%d{YYYY-MM-dd E HH:mm:ss.SSS} %-5p ${PID} [%8.15t] %c{1}:%L : %m%n"
 
 ---
 spring:
-  profiles: test
+  config:
+    activate:
+      on-profile: test
   h2:
     console:
       enabled: true
