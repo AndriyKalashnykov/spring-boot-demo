@@ -21,6 +21,8 @@ ACT_VERSION := 0.2.86
 TRIVY_VERSION := 0.58.1
 # renovate: datasource=github-releases depName=gitleaks/gitleaks
 GITLEAKS_VERSION := 8.22.1
+# renovate: datasource=docker depName=minlag/mermaid-cli
+MERMAID_CLI_VERSION := 11.4.2
 
 # Ensure tools installed to ~/.local/bin are on PATH for every recipe —
 # needed inside the act runner and on fresh shells where rc files aren't sourced.
@@ -184,8 +186,37 @@ cve-check: deps
 #vulncheck: @ Alias for cve-check
 vulncheck: cve-check
 
+#mermaid-lint: @ Validate Mermaid diagrams in markdown files
+mermaid-lint:
+	@command -v docker >/dev/null 2>&1 || { echo "ERROR: docker is required for mermaid-lint"; exit 1; }
+	@set -euo pipefail; \
+	MD_FILES=$$(grep -lF '```mermaid' README.md CLAUDE.md 2>/dev/null || true); \
+	if [ -z "$$MD_FILES" ]; then \
+		echo "No Mermaid blocks found — skipping."; \
+		exit 0; \
+	fi; \
+	FAILED=0; \
+	for md in $$MD_FILES; do \
+		echo "Validating Mermaid blocks in $$md..."; \
+		LOG=$$(mktemp); \
+		if docker run --rm -v "$$PWD:/data" \
+			minlag/mermaid-cli:$(MERMAID_CLI_VERSION) \
+			-i "/data/$$md" -o "/tmp/$$(basename $$md .md).svg" >"$$LOG" 2>&1; then \
+			echo "  PASS: all blocks rendered cleanly."; \
+		else \
+			echo "  FAIL: parse error in $$md:"; \
+			sed 's/^/    /' "$$LOG"; \
+			FAILED=$$((FAILED + 1)); \
+		fi; \
+		rm -f "$$LOG"; \
+	done; \
+	if [ "$$FAILED" -gt 0 ]; then \
+		echo "Mermaid lint: $$FAILED file(s) had parse errors."; \
+		exit 1; \
+	fi
+
 #static-check: @ Run all quality and security checks (composite gate)
-static-check: format-check lint lint-docker trivy-fs secrets
+static-check: format-check lint lint-docker mermaid-lint trivy-fs secrets
 	@echo "Static check passed."
 
 #integration-test: @ Run integration tests (*IT.java via Failsafe)
@@ -236,6 +267,6 @@ release:
 		echo "Done."'
 
 .PHONY: help deps deps-install deps-maven deps-hadolint deps-act deps-trivy deps-gitleaks deps-check \
-	clean build test run format format-check lint lint-docker trivy-fs secrets cve-check vulncheck \
-	static-check integration-test image-build image-run image-stop image-push ci ci-run \
-	renovate-validate release
+	clean build test run format format-check lint lint-docker mermaid-lint trivy-fs secrets \
+	cve-check vulncheck static-check integration-test image-build image-run image-stop image-push \
+	ci ci-run renovate-validate release

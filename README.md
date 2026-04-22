@@ -50,14 +50,66 @@ make deps-install
 
 ## Architecture
 
-The service is a single Spring Boot jar exposing a REST API for hotel records, backed by an in-memory H2 database. Actuator exposes operational endpoints (health, metrics, Prometheus scrape) on the same port. Springfox generates OpenAPI 3 documentation surfaced through Swagger UI.
+The service is a single Spring Boot jar exposing a REST API for hotel records, backed by an in-memory H2 database. Actuator exposes operational endpoints (health, metrics, Prometheus scrape) on the same port. Springfox generates Swagger 2 documentation surfaced through Swagger UI.
 
+### Container view
+
+```mermaid
+C4Container
+    title Container view — Spring Boot Demo
+
+    Person(client, "REST Client", "curl, httpie, browser, Postman")
+
+    System_Boundary(sys, "Spring Boot Demo") {
+        Container(api, "REST Service", "Spring Boot 2.3.9, Java 11, embedded Tomcat 9", "CRUD /example/v1/hotels, Actuator, Swagger UI")
+        ContainerDb(db, "H2 Database", "In-memory JPA/Hibernate", "Hotel entities (transient)")
+    }
+
+    System_Ext(prom, "Prometheus", "Metrics scraper (external)")
+    System_Ext(registry, "Docker Hub", "Container image registry")
+    System_Ext(gha, "GitHub Actions", "CI — test, build, scan, sign, publish")
+
+    Rel(client, api, "REST over HTTPS/HTTP", "JSON or XML")
+    Rel(api, db, "JPA queries", "JDBC in-process")
+    Rel(prom, api, "Scrapes /actuator/prometheus", "HTTP")
+    Rel(gha, registry, "Publishes signed multi-arch image", "cosign keyless")
 ```
-client --> REST (JSON/XML) --> HotelController --> HotelService --> HotelRepository (JPA) --> H2
-                               |
-                               +--> CommitInfoController (git metadata)
-                               +--> Actuator (/actuator/*)
-                               +--> Springfox (/v3/api-docs, /swagger-ui/**)
+
+### Request flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as REST Client
+    participant HC as HotelController
+    participant HS as HotelService
+    participant HR as HotelRepository
+    participant DB as H2
+
+    C->>HC: POST /example/v1/hotels (JSON body)
+    HC->>HS: createHotel(hotel)
+    HS->>HR: save(hotel)
+    HR->>DB: INSERT INTO hotel ...
+    DB-->>HR: generated id
+    HR-->>HS: persisted entity
+    HS-->>HC: entity
+    HC-->>C: 201 Created + Location /hotels/{id}
+
+    C->>HC: GET /hotels/{id}
+    HC->>HS: getHotel(id)
+    HS->>HR: findById(id)
+    HR->>DB: SELECT ...
+    alt row exists
+        DB-->>HR: row
+        HR-->>HS: Optional.of(hotel)
+        HS-->>HC: hotel
+        HC-->>C: 200 OK (JSON)
+    else no row
+        DB-->>HR: empty
+        HR-->>HS: Optional.empty()
+        HS-->>HC: throws ResourceNotFoundException
+        HC-->>C: 404 Not Found
+    end
 ```
 
 Image-build variants covered by the repo:

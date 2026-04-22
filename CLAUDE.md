@@ -37,6 +37,7 @@ See `make help` for the full target list.
 - **Endpoints**: REST CRUD at `/example/v1/hotels`, Swagger at `/swagger-ui/index.html`, Swagger 2 JSON at `/v2/api-docs`, Actuator at `/actuator/*`
 - **Database**: H2 in-memory (JPA/Hibernate)
 - **Version manager**: mise (manages Java + Maven)
+- **Architecture diagrams**: Mermaid C4Container + sequence block inline in README; validated by `make mermaid-lint` (Docker `minlag/mermaid-cli`, pinned in `Makefile`). Wired into `make static-check`.
 
 ## CI/CD
 
