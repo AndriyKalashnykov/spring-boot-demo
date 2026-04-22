@@ -68,14 +68,17 @@
       "groupName": "Spring Framework"
     },
     {
-      "description": "Group Jackson dependencies",
-      "matchPackageNames": ["/^com\\.fasterxml\\.jackson/"],
+      "description": "Group Jackson dependencies (com.fasterxml is the 2.x line; tools.jackson is the 3.x line)",
+      "matchPackageNames": [
+        "/^com\\.fasterxml\\.jackson/",
+        "/^tools\\.jackson/"
+      ],
       "groupName": "Jackson"
     },
     {
-      "description": "Group Springfox (Swagger) dependencies",
-      "matchPackageNames": ["/^io\\.springfox/"],
-      "groupName": "Springfox"
+      "description": "Group springdoc-openapi dependencies",
+      "matchPackageNames": ["/^org\\.springdoc/"],
+      "groupName": "springdoc-openapi"
     }
   ]
 }

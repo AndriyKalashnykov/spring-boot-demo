@@ -1,32 +1,36 @@
-ARG MVN_VERSION=3.6.3
-ARG JDK_VERSION=11
+ARG MVN_VERSION=3.9.15
+ARG JDK_VERSION=25
 
-FROM maven:${MVN_VERSION}-jdk-${JDK_VERSION} as build
-
+# Variant used by scripts/build-dockerimage-m2-cache.sh and the Kaniko script
+# for local fast iteration — consumes a jar that was pre-built on the host
+# against a shared ~/.m2 volume, so the image build stage only extracts
+# Spring Boot layers. Same runtime base image as the main Dockerfile.
+FROM maven:${MVN_VERSION}-eclipse-temurin-${JDK_VERSION} AS build
 ADD target target
-# extract JAR Layers
 WORKDIR target
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM gcr.io/distroless/java:${JDK_VERSION}-debug as runtime
+FROM eclipse-temurin:${JDK_VERSION}-jre-jammy AS runtime
 
-USER nonroot:nonroot
+RUN groupadd -g 65532 -r nonroot \
+ && useradd -u 65532 -g nonroot -r -s /usr/sbin/nologin -M nonroot
+
+USER 65532:65532
 WORKDIR /application
 
-# copy layers from build image to runtime image as nonroot user
-COPY --from=build --chown=nonroot:nonroot target/dependencies/ ./
-COPY --from=build --chown=nonroot:nonroot target/snapshot-dependencies/ ./
-COPY --from=build --chown=nonroot:nonroot target/spring-boot-loader/ ./
-COPY --from=build --chown=nonroot:nonroot target/application/ ./
+COPY --from=build --chown=65532:65532 target/dependencies/ ./
+COPY --from=build --chown=65532:65532 target/snapshot-dependencies/ ./
+COPY --from=build --chown=65532:65532 target/spring-boot-loader/ ./
+COPY --from=build --chown=65532:65532 target/application/ ./
 
 EXPOSE 8080
 EXPOSE 8081
 
-ENV _JAVA_OPTIONS "-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
+ENV _JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
 -Djava.security.egd=file:/dev/./urandom \
 -Djava.awt.headless=true -Dfile.encoding=UTF-8 \
 -Dspring.output.ansi.enabled=ALWAYS \
 -Dspring.profiles.active=default"
 
-# set entrypoint to layered Spring Boot application
-ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
+# Spring Boot 3.2+ relocated JarLauncher to the .launch sub-package
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

@@ -25,9 +25,10 @@ See `make help` for the full target list.
 
 - `src/main/java/com/test/example/` -- Application source (Spring Boot REST)
 - `src/test/java/` -- Tests (MockMvc)
-- `pom.xml` -- Maven build config (Spring Boot 2.3.9, Java 11)
+- `pom.xml` -- Maven build config (Spring Boot 4.0.5, Java 25)
 - `Dockerfile` / `Dockerfile.maven-host-m2-cache` -- Multi-stage Docker builds
-- `scripts/` -- Docker image build scripts (Buildpacks, Kaniko, multi-stage, m2-cache)
+- `scripts/` -- Docker image build scripts (multi-stage, Buildpacks, Kaniko, Spring Boot layered jar, m2-cache) + local run helpers
+- `LICENSE` -- MIT
 - `skaffold.yaml` -- Skaffold config (Paketo buildpacks)
 - `hotel.json` -- Sample API payload
 - `Makefile` -- Build orchestration
@@ -85,7 +86,7 @@ Resolved by the SB 2.3.9 → 4.0.5 migration:
 ### Deferred
 
 - [ ] **Dockerfile ARGs lack `# renovate:` annotations** — `ARG MVN_VERSION`, `ARG JDK_VERSION` still invisible to Renovate.
-- [ ] **`scripts/*.sh` hardcoded image tags** — `mongo:4.2.3`, `maven:3-jdk-11`, `paketo-buildpacks/builder:base` are not variables and not Renovate-tracked. Extract or mark as legacy.
+- [ ] **`scripts/*.sh` rolling-tag Paketo builder** — `gcr.io/paketo-buildpacks/builder:base` in `build-dockerimage-buildpacks.sh` is a rolling tag (Paketo pushes new versions to `:base` directly). Pin to a specific Paketo builder release if supply-chain provenance matters. (The previously-flagged `mongo:4.2.3` and `maven:3-jdk-11` references were resolved during the SB 4 migration.)
 - [ ] **Dependabot alert #21** (1 critical, pre-existing) — check Settings → Dependabot; the SB 4 migration may have resolved it.
 - [ ] **`LICENSE` file** — absent; README has no License badge (consistent). Add MIT if publishing the project.
 - [ ] **Orphan `master` branch on remote** — stale, `main` is the default. Delete after confirming nothing references it.
