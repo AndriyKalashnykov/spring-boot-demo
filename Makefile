@@ -22,7 +22,7 @@ TRIVY_VERSION := 0.70.0
 # renovate: datasource=github-releases depName=gitleaks/gitleaks
 GITLEAKS_VERSION := 8.30.1
 # renovate: datasource=docker depName=minlag/mermaid-cli
-MERMAID_CLI_VERSION := 11.4.2
+MERMAID_CLI_VERSION := 11.12.0
 
 # Ensure tools installed to ~/.local/bin are on PATH for every recipe —
 # needed inside the act runner and on fresh shells where rc files aren't sourced.
