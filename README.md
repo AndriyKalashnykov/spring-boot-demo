@@ -2,6 +2,7 @@
 [![Hits](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo.svg?view=today-total&style=plastic)](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://app.renovatebot.com/dashboard#github/AndriyKalashnykov/spring-boot-demo)
+[![GitHub release](https://img.shields.io/github/v/release/AndriyKalashnykov/spring-boot-demo?sort=semver&display_name=tag)](https://github.com/AndriyKalashnykov/spring-boot-demo/releases)
 
 # Spring Boot Container Pipeline Reference
 
@@ -21,7 +22,7 @@ C4Context
     Rel(sbd, registry, "Image pulled from", "docker pull")
 ```
 
-The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). Published image: `ghcr.io/AndriyKalashnykov/spring-boot-demo/app:<semver>`. Authentication uses `GITHUB_TOKEN` — no separate registry credentials required.
+The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). Published image: `ghcr.io/andriykalashnykov/spring-boot-demo/app:<semver>` (OCI references are lowercase). Authentication uses `GITHUB_TOKEN` — no separate registry credentials required.
 
 | Component | Technology |
 |-----------|-----------|
@@ -32,7 +33,7 @@ The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). P
 | Metrics | Spring Boot Actuator + Micrometer Prometheus |
 | Tests | JUnit 5 + Spring MockMvc + TestRestTemplate (via `spring-boot-resttestclient`) |
 | Build | Maven 3.9, multi-stage Dockerfile, Buildpacks, Kaniko, Skaffold |
-| Runtime | Container image on GHCR (`ghcr.io/AndriyKalashnykov/spring-boot-demo/app`); Kubernetes deployment |
+| Runtime | Container image on GHCR (`ghcr.io/andriykalashnykov/spring-boot-demo/app`); Kubernetes deployment |
 | CI | GitHub Actions, Renovate |
 
 ## Quick Start
@@ -345,7 +346,7 @@ Buildkit in-manifest attestations (`provenance`, `sbom`) are disabled so the ima
 Verify a published image's signature:
 
 ```bash
-cosign verify ghcr.io/AndriyKalashnykov/spring-boot-demo/app:<tag> \
+cosign verify ghcr.io/andriykalashnykov/spring-boot-demo/app:<tag> \
   --certificate-identity-regexp 'https://github\.com/AndriyKalashnykov/spring-boot-demo/.+' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
