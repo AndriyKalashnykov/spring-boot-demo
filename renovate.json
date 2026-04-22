@@ -66,6 +66,12 @@
       "groupName": "GitHub Actions"
     },
     {
+      "description": "Delay Temurin java-version bumps for 7 days so mise's aqua backend indexes the new patch before Renovate proposes it (Adoptium announces same-day; aqua re-scrapes with a few-day lag)",
+      "matchDatasources": ["java-version"],
+      "matchPackageNames": ["java"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
       "description": "Group Spring Boot dependencies",
       "matchPackageNames": ["/^org\\.springframework\\.boot/"],
       "groupName": "Spring Boot"
