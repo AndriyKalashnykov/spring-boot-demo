@@ -2,16 +2,16 @@
 [![Hits](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo.svg?view=today-total&style=plastic)](https://hits.sh/github.com/AndriyKalashnykov/spring-boot-demo/)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://app.renovatebot.com/dashboard#github/AndriyKalashnykov/spring-boot-demo)
 
-# Spring Boot Demo
+# Spring Boot Container Pipeline Reference
 
-Spring Boot 2.3.9 REST microservice exposing CRUD endpoints over an H2 in-memory database. Demonstrates four container image build paths (multi-stage Dockerfile with BuildKit, Cloud Native Buildpacks, Kaniko, Spring Boot layered jar) and a Kubernetes deployment flow via Skaffold.
+A small Spring Boot REST microservice (hotel CRUD over an in-memory H2) used as a reference for four container image build paths — multi-stage Dockerfile with BuildKit, Cloud Native Buildpacks, Kaniko, and the Spring Boot layered jar. Ships with a hardened GitHub Actions pipeline (Trivy image scan, boot-marker smoke test, multi-arch build, cosign keyless signing to GHCR) and a Skaffold-driven Kubernetes deployment flow. The application is deliberately minimal — the value is in the image, CI, and deployment harness around it.
 
 ```mermaid
 C4Context
-    title System context — Spring Boot Demo
+    title System context — Spring Boot Container Pipeline Reference
 
     Person(client, "REST Client", "curl, browser, Postman")
-    System(sbd, "Spring Boot Demo", "REST service + embedded H2")
+    System(sbd, "Spring Boot service", "REST + embedded H2")
     System_Ext(prom, "Prometheus", "Scrapes /actuator/prometheus")
     System_Ext(registry, "Docker Hub", "Signed multi-arch image")
 
@@ -72,11 +72,11 @@ The service is a single Spring Boot jar exposing a REST API for hotel records, b
 
 ```mermaid
 C4Container
-    title Container view — Spring Boot Demo
+    title Container view — Spring Boot Container Pipeline Reference
 
     Person(client, "REST Client", "curl, httpie, browser, Postman")
 
-    System_Boundary(sys, "Spring Boot Demo") {
+    System_Boundary(sys, "Spring Boot service") {
         Container(api, "REST Service", "Spring Boot 2.3.9, Java 11, embedded Tomcat 9", "CRUD /example/v1/hotels, Actuator, Swagger UI")
         ContainerDb(db, "H2 Database", "In-memory JPA/Hibernate", "Hotel entities (transient)")
     }
