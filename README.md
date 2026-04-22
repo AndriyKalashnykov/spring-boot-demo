@@ -319,7 +319,7 @@ GitHub Actions runs on every push to `main`, pull requests, `v*` tags, and manua
 | `test` | all | `make test` — JUnit via Spring MockMvc |
 | `integration-test` | all | `make integration-test` — `*IT.java` via Maven Failsafe |
 | `build` | all | `make build` — packages the jar, uploads as artifact |
-| `docker` | push / dispatch only | Build, scan, smoke-test, sign, and push multi-arch image |
+| `docker` | `v*` tags + dispatch | Build, Trivy scan, smoke-test, multi-arch push, cosign sign |
 | `ci-pass` | all | Aggregator gate for branch protection |
 
 A separate `Cleanup` workflow prunes old workflow runs and caches on a weekly schedule (Sunday 00:00 UTC) plus manual dispatch.
