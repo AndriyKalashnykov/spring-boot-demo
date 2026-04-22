@@ -83,13 +83,20 @@ Resolved by the SB 2.3.9 → 4.0.5 migration:
 - `@DataJpaTest` moved to `spring-boot-data-jpa-test` starter
 - `WebConfig` stripped of removed `favorPathExtension` / `useJaf`, no longer has spurious `@EnableWebMvc`
 
-### Deferred
+### Also resolved (2026-04-22 follow-up passes)
 
-- [ ] **Dockerfile ARGs lack `# renovate:` annotations** — `ARG MVN_VERSION`, `ARG JDK_VERSION` still invisible to Renovate.
-- [ ] **`scripts/*.sh` rolling-tag Paketo builder** — `gcr.io/paketo-buildpacks/builder:base` in `build-dockerimage-buildpacks.sh` is a rolling tag (Paketo pushes new versions to `:base` directly). Pin to a specific Paketo builder release if supply-chain provenance matters. (The previously-flagged `mongo:4.2.3` and `maven:3-jdk-11` references were resolved during the SB 4 migration.)
-- [ ] **Dependabot alert #21** (1 critical, pre-existing) — check Settings → Dependabot; the SB 4 migration may have resolved it.
-- [ ] **`LICENSE` file** — absent; README has no License badge (consistent). Add MIT if publishing the project.
-- [ ] **Orphan `master` branch on remote** — stale, `main` is the default. Delete after confirming nothing references it.
+- Dockerfile ARGs rewired to full-tag ARGs (`MAVEN_IMAGE_VERSION`, `TEMURIN_IMAGE_VERSION`) with `# renovate: datasource=docker depName=...` comments; Temurin pinned to `25.0.2_10-jre-jammy@sha256:...`
+- `scripts/build-dockerimage-buildpacks.sh` rolling `gcr.io/paketo-buildpacks/builder:base` → pinned `paketobuildpacks/builder-jammy-base:0.4.563` with renovate comment + new `scripts/*.sh` custom manager in `renovate.json`
+- `BP_OCI_SOURCE` set in pom.xml's `spring-boot-maven-plugin` image config so `mvn spring-boot:build-image` produces a GHCR-auto-linkable image
+- Tomcat 11.0.20 → 11.0.21 override (closes CVE-2026-34483 + CVE-2026-34487). Final Trivy: 0 CRITICAL/HIGH on the built image
+- Dockerfile + Dockerfile.maven-host-m2-cache: `# syntax=docker/dockerfile:1`, BuildKit `RUN --mount=type=cache,target=/root/.m2`, `COPY --link` on runtime layers, consolidated WORKDIR, hadolint-clean
+- `.dockerignore` created (keeps `.git`; excludes everything else)
+- LICENSE file (MIT) + License badge added
+- `.travis.yml` removed (Travis openjdk11 + Bionic config; CI is GitHub Actions)
+- Orphan `master` branch deleted from remote
+- Dependabot alert #21 verified fixed (along with 13 other historical alerts; 0 open now)
+- ci.yml aligned to `/ci-workflow` canon: `jdx/mise-action` + explicit Maven cache, `contains(needs.*.result, 'failure')` aggregator, `paths-ignore` trigger filter, `workflow_call` trigger, canonical step names on every `uses:` step
+- `renovate.json`: Apache commons grouping + `lang: java` label rule added; Jackson rule covers both `com.fasterxml.jackson` and `tools.jackson` namespaces; 7-day throttle on `java-version` datasource for mise-aqua race
 
 ## Skills
 
