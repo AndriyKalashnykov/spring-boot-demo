@@ -245,13 +245,36 @@ GitHub Actions runs on every push to `main`, pull requests, `v*` tags, and manua
 | Job | Triggers | Purpose |
 |-----|----------|---------|
 | `test` | all | `make test` — JUnit via Spring MockMvc |
+| `integration-test` | all | `make integration-test` — `*IT.java` via Maven Failsafe |
 | `build` | all | `make build` — packages the jar, uploads as artifact |
-| `docker` | push / dispatch only | Build and push Docker image to Docker Hub |
+| `docker` | push / dispatch only | Build, scan, smoke-test, sign, and push multi-arch image |
 | `ci-pass` | all | Aggregator gate for branch protection |
 
 A separate `Cleanup` workflow prunes old workflow runs and caches on a weekly schedule (Sunday 00:00 UTC) plus manual dispatch.
 
 Dependency updates are managed by [Renovate](https://docs.renovatebot.com/) with `config:best-practices` and `platformAutomerge: true`.
+
+### Pre-push image hardening
+
+The `docker` job runs these gates **before** any image is pushed to Docker Hub. Any failure blocks the release.
+
+| # | Gate | Catches | Tool |
+|---|------|---------|------|
+| 1 | Single-arch scan build | Build regressions, base-image drift | `docker/build-push-action` with `load: true` |
+| 2 | Trivy image scan (CRITICAL/HIGH blocking) | Fixed CVEs in base image, OS packages, build layers | `aquasecurity/trivy-action` with `image-ref:` |
+| 3 | Spring Boot boot-marker smoke test | Image fails to start (classpath, JVM flags, config) | `docker run` + grep `Started …Application` in logs |
+| 4 | Multi-arch build + push | Publishes `linux/amd64` + `linux/arm64` to Docker Hub | `docker/build-push-action` with `push: true` |
+| 5 | Cosign keyless OIDC signing | Sigstore signature on the manifest digest | `sigstore/cosign-installer` + `cosign sign` |
+
+Buildkit in-manifest attestations (`provenance`, `sbom`) are disabled so the image index stays free of `unknown/unknown` platform entries — this keeps the registry "OS / Arch" tab rendering correctly. Cosign keyless signing provides supply-chain verification.
+
+Verify a published image's signature:
+
+```bash
+cosign verify docker.io/<DOCKERHUB_USERNAME>/spring-boot-demo:<tag> \
+  --certificate-identity-regexp 'https://github\.com/AndriyKalashnykov/spring-boot-demo/.+' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
 
 ### Required Secrets and Variables
 

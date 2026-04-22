@@ -87,6 +87,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write   # cosign keyless OIDC (Sigstore Fulcio)
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -97,6 +98,73 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
 
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5 # unpinned; Renovate will pin via helpers:pinGitHubActionDigests
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-demo
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+          flavor: |
+            latest=auto
+
+      # =================================================================
+      # Gate 1: single-arch local build for scanning + smoke testing
+      # =================================================================
+      - name: Build image for scan
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: spring-boot-demo:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # =================================================================
+      # Gate 2: Trivy image scan — block on CRITICAL/HIGH fixed CVEs
+      # =================================================================
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@master # unpinned; Renovate will pin via helpers:pinGitHubActionDigests
+        with:
+          image-ref: spring-boot-demo:scan
+          scanners: 'vuln,secret,misconfig'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      # =================================================================
+      # Gate 3: Spring Boot boot-marker smoke test
+      # =================================================================
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          docker run -d --name=smoke spring-boot-demo:scan
+          echo "Waiting up to 90s for Spring Boot to boot..."
+          end=$((SECONDS + 90))
+          while [ $SECONDS -lt $end ]; do
+            if docker logs smoke 2>&1 | grep -qE 'Started [A-Z][a-zA-Z]+Application in|Tomcat started on port'; then
+              echo "PASS: Spring Boot booted"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "FAIL: Spring Boot did not reach start within 90s"
+          docker logs smoke
+          exit 1
+
+      - name: Cleanup smoke container
+        if: always()
+        run: docker rm -f smoke 2>/dev/null || true
+
+      # =================================================================
+      # All gates passed — multi-arch push + cosign keyless signing
+      # =================================================================
       - name: Log in to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
@@ -109,13 +177,29 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-demo:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-demo:sha-${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false   # keep image index free of unknown/unknown entries (Docker Hub UI parity)
+          sbom: false         # cosign keyless signing below provides supply-chain verification
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3 # unpinned; Renovate will pin via helpers:pinGitHubActionDigests
+
+      - name: Sign image with cosign
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            echo "→ cosign sign ${tag}@${DIGEST}"
+            cosign sign --yes "${tag}@${DIGEST}"
+          done <<< "${TAGS}"
 
   ci-pass:
     name: CI Pass

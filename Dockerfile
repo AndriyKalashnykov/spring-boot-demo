@@ -1,4 +1,4 @@
-ARG MVN_VERSION=3.6.3
+ARG MVN_VERSION=3.9.15
 ARG JDK_VERSION=11
 
 FROM maven:${MVN_VERSION}-jdk-${JDK_VERSION} as build
@@ -20,14 +20,16 @@ RUN java -Djarmode=layertools -jar *.jar extract
 
 FROM gcr.io/distroless/java:${JDK_VERSION}-debug as runtime
 
-USER nonroot:nonroot
+# Numeric UID (distroless nonroot = 65532) — lets Kubernetes verify
+# `runAsNonRoot: true` at admission time, which a named user cannot.
+USER 65532:65532
 WORKDIR /application
 
 # copy layers from build image to runtime image as nonroot user
-COPY --from=build --chown=nonroot:nonroot /tmp/target/dependencies/ ./
-COPY --from=build --chown=nonroot:nonroot /tmp/target/snapshot-dependencies/ ./
-COPY --from=build --chown=nonroot:nonroot /tmp/target/spring-boot-loader/ ./
-COPY --from=build --chown=nonroot:nonroot /tmp/target/application/ ./
+COPY --from=build --chown=65532:65532 /tmp/target/dependencies/ ./
+COPY --from=build --chown=65532:65532 /tmp/target/snapshot-dependencies/ ./
+COPY --from=build --chown=65532:65532 /tmp/target/spring-boot-loader/ ./
+COPY --from=build --chown=65532:65532 /tmp/target/application/ ./
 
 EXPOSE 8080
 EXPOSE 8081
