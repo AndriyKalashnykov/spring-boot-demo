@@ -6,6 +6,20 @@
 
 Spring Boot 2.3.9 REST microservice exposing CRUD endpoints over an H2 in-memory database. Demonstrates four container image build paths (multi-stage Dockerfile with BuildKit, Cloud Native Buildpacks, Kaniko, Spring Boot layered jar) and a Kubernetes deployment flow via Skaffold.
 
+```mermaid
+C4Context
+    title System context — Spring Boot Demo
+
+    Person(client, "REST Client", "curl, browser, Postman")
+    System(sbd, "Spring Boot Demo", "REST service + embedded H2")
+    System_Ext(prom, "Prometheus", "Scrapes /actuator/prometheus")
+    System_Ext(registry, "Docker Hub", "Signed multi-arch image")
+
+    Rel(client, sbd, "CRUD /example/v1/hotels", "HTTPS / JSON")
+    Rel(prom, sbd, "Metrics scrape", "HTTP")
+    Rel(sbd, registry, "Image pulled from", "docker pull")
+```
+
 | Component | Technology |
 |-----------|-----------|
 | Language | Java 11 (Temurin) |
@@ -244,9 +258,15 @@ Run `make help` to see the full list.
 | Target | Description |
 |--------|-------------|
 | `make build` | Build the jar (skips tests) |
-| `make test` | Run unit tests |
 | `make run` | Start the application locally on port 8080 |
 | `make clean` | Remove build artifacts |
+
+### Testing
+
+| Target | Description | Runtime |
+|--------|-------------|---------|
+| `make test` | Unit tests — Spring MockMvc, in-process | seconds |
+| `make integration-test` | Integration tests — `*IT.java` via Maven Failsafe, real Tomcat on a random port, H2 backend | tens of seconds |
 
 ### Code Quality
 
@@ -256,7 +276,8 @@ Run `make help` to see the full list.
 | `make format-check` | Verify formatting (CI gate) |
 | `make lint` | Compiler warnings-as-errors |
 | `make lint-docker` | Lint both Dockerfiles with `hadolint` |
-| `make static-check` | Composite gate: format-check, lint, lint-docker, trivy-fs, secrets |
+| `make mermaid-lint` | Validate Mermaid blocks with pinned `minlag/mermaid-cli` |
+| `make static-check` | Composite gate: format-check, lint, lint-docker, mermaid-lint, trivy-fs, secrets |
 
 ### Security
 
@@ -287,7 +308,6 @@ Run `make help` to see the full list.
 
 | Target | Description |
 |--------|-------------|
-| `make integration-test` | Run integration tests (requires Failsafe profile in `pom.xml` — not yet configured) |
 | `make release` | Create and push a semver release tag (interactive) |
 
 ## CI/CD
