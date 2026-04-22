@@ -1,26 +1,26 @@
 #!/bin/bash
+# Build the image via Cloud Native Buildpacks (pack CLI) against the pinned
+# Paketo jammy-base builder. Install pack: https://buildpacks.io/docs/tools/pack/cli/install/
+#   brew install buildpacks/tap/pack
+#
+# References:
+#   https://github.com/paketo-buildpacks/spring-boot
+#   https://github.com/spring-cloud/spring-cloud-bindings
 
-# https://buildpacks.io/docs/tools/pack/cli/install/
-# brew install buildpacks/tap/pack
+set -euo pipefail
 
-LAUNCH_DIR=$(pwd); SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd $SCRIPT_DIR; cd ..; SCRIPT_PARENT_DIR=$(pwd);
-cd $SCRIPT_PARENT_DIR
+# renovate: datasource=docker depName=paketobuildpacks/builder-jammy-base
+PAKETO_BUILDER_VERSION="0.4.563"
+PAKETO_BUILDER="paketobuildpacks/builder-jammy-base:${PAKETO_BUILDER_VERSION}"
 
-docker image rm -f spring-boot-demo:latest
-docker rmi -f $(docker images | grep '<none>' | awk '{print $3}') 2>/dev/null
+LAUNCH_DIR=$(pwd)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
 
-# pack inspect-builder gcr.io/buildpacks/builder:v1
-#pack inspect-builder gcr.io/paketo-buildpacks/builder:base
+docker image rm -f spring-boot-demo:latest || true
 
-# https://github.com/paketo-buildpacks/spring-boot
-# https://github.com/spring-cloud/spring-cloud-bindings
+pack build spring-boot-demo --builder="$PAKETO_BUILDER" --path=.
 
-# pack build spring-boot-demo --builder=gcr.io/buildpacks/builder:v1 --path=.
-# pack build spring-boot-demo --builder gcr.io/paketo-buildpacks/builder:base-platform-api-0.3
-pack build spring-boot-demo --builder=gcr.io/paketo-buildpacks/builder:base --path=.
+docker run --rm --name spring-boot-demo -p 8080:8080 -p 8181:8081 spring-boot-demo:latest
 
-#pack build spring-boot-demo --builder gcr.io/buildpacks/builder:v1 --path=.
-
-docker run --rm --name spring-boot-demo -p 8080:8080 -p 8181:8081 -p 8778:8778 spring-boot-demo:latest
-
-cd $LAUNCH_DIR
+cd "$LAUNCH_DIR"

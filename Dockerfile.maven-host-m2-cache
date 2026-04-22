@@ -1,16 +1,19 @@
-ARG MVN_VERSION=3.9.15
-ARG JDK_VERSION=25
+# renovate: datasource=docker depName=maven
+ARG MAVEN_IMAGE_VERSION=3.9.15-eclipse-temurin-25
+
+# renovate: datasource=docker depName=eclipse-temurin
+ARG TEMURIN_IMAGE_VERSION=25-jre-jammy
 
 # Variant used by scripts/build-dockerimage-m2-cache.sh and the Kaniko script
 # for local fast iteration — consumes a jar that was pre-built on the host
 # against a shared ~/.m2 volume, so the image build stage only extracts
 # Spring Boot layers. Same runtime base image as the main Dockerfile.
-FROM maven:${MVN_VERSION}-eclipse-temurin-${JDK_VERSION} AS build
+FROM maven:${MAVEN_IMAGE_VERSION} AS build
 ADD target target
 WORKDIR target
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM eclipse-temurin:${JDK_VERSION}-jre-jammy AS runtime
+FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
 
 RUN groupadd -g 65532 -r nonroot \
  && useradd -u 65532 -g nonroot -r -s /usr/sbin/nologin -M nonroot

@@ -1,10 +1,10 @@
-ARG MVN_VERSION=3.9.15
-ARG JDK_VERSION=25
+# renovate: datasource=docker depName=maven
+ARG MAVEN_IMAGE_VERSION=3.9.15-eclipse-temurin-25
 
-# Docker Hub's maven images moved from the -jdk-N tag family to
-# -eclipse-temurin-N; use the Temurin flavor which is the current
-# convention and matches the project's mise-managed Temurin JDK.
-FROM maven:${MVN_VERSION}-eclipse-temurin-${JDK_VERSION} AS build
+# renovate: datasource=docker depName=eclipse-temurin
+ARG TEMURIN_IMAGE_VERSION=25-jre-jammy
+
+FROM maven:${MAVEN_IMAGE_VERSION} AS build
 WORKDIR /build
 COPY pom.xml .
 COPY .git .
@@ -21,7 +21,7 @@ RUN mvn clean package
 WORKDIR /tmp/target
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM eclipse-temurin:${JDK_VERSION}-jre-jammy AS runtime
+FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
 
 # Eclipse Temurin 25 LTS (Ubuntu Jammy) — actively CVE-patched upstream.
 # Create a non-root user with a numeric UID so Kubernetes can verify
