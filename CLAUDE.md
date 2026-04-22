@@ -34,7 +34,7 @@ See `make help` for the full target list.
 - **Java version**: 11 (Temurin, pinned in `.mise.toml` + `.java-version`)
 - **Spring Boot**: 2.3.9.RELEASE (Spring Framework 5.x, embedded Tomcat 9)
 - **Default branch**: `main`
-- **Endpoints**: REST CRUD at `/example/v1/hotels`, Swagger at `/swagger-ui/index.html`, OpenAPI 3 at `/v3/api-docs`, Actuator at `/actuator/*`
+- **Endpoints**: REST CRUD at `/example/v1/hotels`, Swagger at `/swagger-ui/index.html`, Swagger 2 JSON at `/v2/api-docs`, Actuator at `/actuator/*`
 - **Database**: H2 in-memory (JPA/Hibernate)
 - **Version manager**: mise (manages Java + Maven)
 

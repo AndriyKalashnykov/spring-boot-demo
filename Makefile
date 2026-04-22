@@ -10,7 +10,7 @@ CURRENTTAG  := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 # Java and Maven are pinned in .mise.toml and read natively by mise.
 # MAVEN_VER here only backs the deps-maven fallback used inside act/CI containers that lack mise.
 # renovate: datasource=maven depName=org.apache.maven:apache-maven
-MAVEN_VER := 3.9.9
+MAVEN_VER := 3.9.15
 # renovate: datasource=github-releases depName=google/google-java-format extractVersion=^v(?<version>.*)$
 GJF_VERSION := 1.19.2
 # renovate: datasource=github-releases depName=hadolint/hadolint
@@ -188,11 +188,9 @@ vulncheck: cve-check
 static-check: format-check lint lint-docker trivy-fs secrets
 	@echo "Static check passed."
 
-#integration-test: @ Run integration tests (requires Failsafe profile in pom.xml)
+#integration-test: @ Run integration tests (*IT.java via Failsafe)
 integration-test: deps
-	@echo "NOTE: pom.xml does not yet configure maven-failsafe-plugin + integration-test profile."
-	@echo "Run /test-coverage-analysis to scaffold *IT.java tests and wire Failsafe."
-	@$(MVN) -B verify -P integration-test 2>/dev/null || echo "(integration-test profile not configured — skipping)"
+	@$(MVN) -B verify -P integration-test
 
 #image-build: @ Build Docker image (multi-stage)
 image-build: build
@@ -211,7 +209,7 @@ image-push: image-build
 	@docker push $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)
 
 #ci: @ Full local CI pipeline
-ci: deps format-check lint test build
+ci: deps lint test integration-test build
 	@echo "Local CI pipeline passed."
 
 #ci-run: @ Run GitHub Actions workflows locally via act

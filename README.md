@@ -11,7 +11,7 @@ Spring Boot 2.3.9 REST microservice exposing CRUD endpoints over an H2 in-memory
 | Language | Java 11 (Temurin) |
 | Framework | Spring Boot 2.3.9 (Spring Framework 5.x, embedded Tomcat 9) |
 | Persistence | Spring Data JPA + Hibernate, H2 in-memory |
-| API | REST (JSON and XML) + Springfox 3.0 OpenAPI 3 |
+| API | REST (JSON and XML) + Springfox 3.0 (Swagger 2) |
 | Metrics | Spring Boot Actuator + Micrometer Prometheus |
 | Tests | JUnit 4 + Spring MockMvc |
 | Build | Maven 3.9, multi-stage Dockerfile, Buildpacks, Kaniko, Skaffold |
@@ -97,7 +97,7 @@ API documentation:
 | Path | Format |
 |------|--------|
 | `/swagger-ui/index.html` | Swagger UI |
-| `/v3/api-docs` | OpenAPI 3 JSON |
+| `/v2/api-docs` | Swagger 2 JSON (Springfox native; `/v3/api-docs` has a known Springfox NPE) |
 
 ### Example requests
 
