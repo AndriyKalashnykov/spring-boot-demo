@@ -8,6 +8,7 @@
     "maven",
     "github-actions",
     "dockerfile",
+    "docker-compose",
     "mise",
     "custom.regex"
   ],
