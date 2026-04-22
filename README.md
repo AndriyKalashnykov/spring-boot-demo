@@ -131,12 +131,13 @@ sequenceDiagram
 
 Image-build variants covered by the repo:
 
-| Path | Entry point | Notes |
-|------|------------|-------|
-| Multi-stage Dockerfile + BuildKit | `Dockerfile` / `scripts/build-dockerimage.sh` | Distroless base image, non-root |
-| Maven + host `~/.m2` cache | `Dockerfile.maven-host-m2-cache` / `scripts/build-dockerimage-m2-cache.sh` | Reuses host Maven cache for faster local iteration |
-| Cloud Native Buildpacks | `scripts/build-dockerimage-buildpacks.sh` | `pack build` via Paketo |
-| Kaniko | `scripts/build-dockerimage-kaniko.sh` | Rootless, CI-friendly |
+| Path | Dockerfile | Entry point | Notes |
+|------|------------|------------|-------|
+| Multi-stage Dockerfile + BuildKit | `Dockerfile` | `scripts/build-dockerimage.sh` / `make image-build` | Eclipse Temurin 25 JRE runtime, non-root UID 65532, BuildKit cache mount on `~/.m2`, `COPY --link` on runtime layers. Canonical path; also used by CI |
+| Maven + host `~/.m2` cache | `Dockerfile.maven-host-m2-cache` | `scripts/build-dockerimage-m2-cache.sh` | Consumes `target/*.jar` pre-built on the host — run `mvn clean package` (or `make build`) first |
+| Cloud Native Buildpacks | — (buildpacks generate the image) | `scripts/build-dockerimage-buildpacks.sh` | `pack build` against pinned `paketobuildpacks/builder-jammy-base` |
+| Kaniko | `Dockerfile.maven-host-m2-cache` | `scripts/build-dockerimage-kaniko.sh` | Rootless, daemonless, CI-friendly. Also consumes host-built `target/*.jar` |
+| Spring Boot Maven plugin `build-image` | — (Paketo via the plugin) | `scripts/build-dockerimage-maven.sh` | `mvn spring-boot:build-image`; image name comes from `<docker.image.name>` in `pom.xml`, `BP_OCI_SOURCE` set so GHCR auto-links to the repo |
 
 ## API
 

@@ -26,6 +26,8 @@
         <springdoc.version>3.0.3</springdoc.version>
         <!-- Override: Spring Boot 4.0.5 pins Jackson 3.1.0; 3.1.1 fixes GHSA-2m67-wjpj-xhg9 -->
         <jackson-bom.version>3.1.1</jackson-bom.version>
+        <!-- Override: Spring Boot 4.0.5 pins Tomcat 11.0.20; 11.0.21 fixes CVE-2026-34483 + CVE-2026-34487 -->
+        <tomcat.version>11.0.21</tomcat.version>
     </properties>
 
     <dependencies>

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # renovate: datasource=docker depName=maven
 ARG MAVEN_IMAGE_VERSION=3.9.15-eclipse-temurin-25
 
@@ -6,40 +8,41 @@ ARG TEMURIN_IMAGE_VERSION=25.0.2_10-jre-jammy@sha256:d36843a6f1af5d0aca01ef3d926
 
 FROM maven:${MAVEN_IMAGE_VERSION} AS build
 WORKDIR /build
+
+# Dependency layer — BuildKit cache mount persists ~/.m2 across builds.
+# Invalidates only when pom.xml changes.
 COPY pom.xml .
-COPY .git .
-RUN mvn dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B dependency:go-offline
 
-COPY ./pom.xml /tmp/
-COPY ./src /tmp/src/
-COPY ./.git /tmp/.git/
+# Source + git metadata — git-commit-id-plugin needs .git for git.properties.
+COPY src src
+COPY .git .git
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B package
 
-WORKDIR /tmp/
-RUN mvn clean package
-
-# extract JAR Layers
-WORKDIR /tmp/target
-RUN java -Djarmode=layertools -jar *.jar extract
+# Extract Spring Boot layered jar
+WORKDIR /build/target
+RUN java -Djarmode=layertools -jar ./*.jar extract
 
 FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
 
-# Eclipse Temurin 25 LTS (Ubuntu Jammy) — actively CVE-patched upstream.
-# Create a non-root user with a numeric UID so Kubernetes can verify
-# `runAsNonRoot: true` at admission time.
+# Non-root numeric UID — Kubernetes can verify runAsNonRoot at admission.
 RUN groupadd -g 65532 -r nonroot \
  && useradd -u 65532 -g nonroot -r -s /usr/sbin/nologin -M nonroot
 
 USER 65532:65532
 WORKDIR /application
 
-# copy layers from build image to runtime image as nonroot user
-COPY --from=build --chown=65532:65532 /tmp/target/dependencies/ ./
-COPY --from=build --chown=65532:65532 /tmp/target/snapshot-dependencies/ ./
-COPY --from=build --chown=65532:65532 /tmp/target/spring-boot-loader/ ./
-COPY --from=build --chown=65532:65532 /tmp/target/application/ ./
+# --link decouples these layers from the build-stage digest; rebuilds of
+# the build stage don't invalidate the runtime layers when content is
+# unchanged.
+COPY --link --from=build --chown=65532:65532 /build/target/dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/snapshot-dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/spring-boot-loader/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/application/ ./
 
 EXPOSE 8080
-EXPOSE 8081
 
 ENV _JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
 -Djava.security.egd=file:/dev/./urandom \

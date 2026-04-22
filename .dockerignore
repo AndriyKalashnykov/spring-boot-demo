@@ -1,0 +1,50 @@
+# Keep .git in the build context — git-commit-id-plugin reads HEAD/commit metadata
+# during `mvn package` to generate src/main/resources/.../git.properties. Everything
+# else below trims the BuildKit context to speed up every build by a few seconds and
+# avoids leaking local artefacts into the build stage.
+
+# Build artefacts — the main Dockerfile runs `mvn package` inside the build stage.
+# Dockerfile.maven-host-m2-cache has its own `COPY target target` so target/ is
+# NOT added here; add it back if this file ever serves both Dockerfiles exclusively.
+
+# IDE / editor state
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime artefacts (would be recreated inside the container anyway)
+*.log
+*.log.*
+application.log
+
+# Misc project files not needed by docker build
+README.md
+CLAUDE.md
+LICENSE
+.gitignore
+.claudeignore
+.claude/
+docs/
+img/
+skaffold.yaml
+.travis.yml
+renovate.json
+.java-version
+.mise.toml
+
+# Scripts — build-time context only needs pom.xml + src + .git
+scripts/
+
+# CI / GitHub — not needed inside the image
+.github/
+
+# Maven wrapper (we use system/mise maven in the build stage)
+mvnw
+mvnw.cmd
+.mvn/
