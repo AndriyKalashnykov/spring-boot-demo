@@ -1,17 +1,21 @@
+# syntax=docker/dockerfile:1
+
 # renovate: datasource=docker depName=maven
 ARG MAVEN_IMAGE_VERSION=3.9.15-eclipse-temurin-25
 
 # renovate: datasource=docker depName=eclipse-temurin
 ARG TEMURIN_IMAGE_VERSION=25.0.2_10-jre-jammy@sha256:d36843a6f1af5d0aca01ef3d926e2220444eb19fe38e1b23cef3d663ef29b306
 
-# Variant used by scripts/build-dockerimage-m2-cache.sh and the Kaniko script
+# Used by scripts/build-dockerimage-m2-cache.sh and scripts/build-dockerimage-kaniko.sh
 # for local fast iteration — consumes a jar that was pre-built on the host
 # against a shared ~/.m2 volume, so the image build stage only extracts
-# Spring Boot layers. Same runtime base image as the main Dockerfile.
+# Spring Boot layers. Prerequisite: `mvn clean package` must have run on
+# the host first so `target/*.jar` exists.
 FROM maven:${MAVEN_IMAGE_VERSION} AS build
-ADD target target
-WORKDIR target
-RUN java -Djarmode=layertools -jar *.jar extract
+WORKDIR /build
+COPY target target
+WORKDIR /build/target
+RUN java -Djarmode=layertools -jar ./*.jar extract
 
 FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
 
@@ -21,13 +25,12 @@ RUN groupadd -g 65532 -r nonroot \
 USER 65532:65532
 WORKDIR /application
 
-COPY --from=build --chown=65532:65532 target/dependencies/ ./
-COPY --from=build --chown=65532:65532 target/snapshot-dependencies/ ./
-COPY --from=build --chown=65532:65532 target/spring-boot-loader/ ./
-COPY --from=build --chown=65532:65532 target/application/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/snapshot-dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/spring-boot-loader/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/application/ ./
 
 EXPOSE 8080
-EXPOSE 8081
 
 ENV _JAVA_OPTIONS="-XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=90.0 \
 -Djava.security.egd=file:/dev/./urandom \
