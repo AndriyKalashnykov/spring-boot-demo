@@ -20,7 +20,7 @@ ACT_VERSION := 0.2.86
 # renovate: datasource=github-releases depName=aquasecurity/trivy
 TRIVY_VERSION := 0.58.1
 # renovate: datasource=github-releases depName=gitleaks/gitleaks
-GITLEAKS_VERSION := 8.22.1
+GITLEAKS_VERSION := 8.30.1
 # renovate: datasource=docker depName=minlag/mermaid-cli
 MERMAID_CLI_VERSION := 11.4.2
 
