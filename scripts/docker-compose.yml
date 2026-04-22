@@ -2,7 +2,7 @@ version: '3'
 
 services:
   database:
-    image: 'docker.io/mongo:4.2.3'
+    image: 'docker.io/mongo:8.2.7@sha256:7abfba0d07c9330373f8173981ea4d09cd8a82cdf0e86ccaf7008848d1d24f62'
     container_name: 'mongodb'
     environment:
       - MONGO_INITDB_DATABASE=admin
