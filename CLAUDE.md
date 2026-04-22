@@ -5,13 +5,19 @@ Spring Boot 2.x REST microservice demo with Docker, Buildpacks, Kaniko, Skaffold
 ## Build & Test Commands
 
 ```bash
-make deps-install    # Install Java 11 + Maven via mise (first run)
-make build           # Build JAR (skips tests)
-make test            # Run unit tests
-make run             # Start the application locally
-make image-build     # Build Docker image
-make ci              # Full local CI pipeline
+make deps-install       # Install Java 11 + Maven via mise (first run)
+make build              # Build JAR (skips tests)
+make run                # Start the application locally
+make image-build        # Build Docker image
+make ci                 # Full local CI pipeline
 ```
+
+Two test layers:
+
+| Target | Layer | Stack | Runtime |
+|--------|-------|-------|---------|
+| `make test` | Unit | Spring MockMvc, in-process | seconds |
+| `make integration-test` | Integration | `*IT.java` via Maven Failsafe, real Tomcat on random port, H2 backend | tens of seconds |
 
 See `make help` for the full target list.
 
@@ -45,7 +51,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | File | Triggers | Purpose |
 |----------|------|----------|---------|
-| CI | `ci.yml` | push to master, PRs, `v*` tags, manual dispatch | Test → Build → Docker push → ci-pass aggregator |
+| CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch | Test → Integration-test → Build → Docker (scan + smoke + cosign sign + push) → ci-pass aggregator |
 | Cleanup | `cleanup-runs.yml` | weekly (Sunday) + manual + `workflow_call` | Delete old workflow runs and caches |
 
 Required secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (consumed by the `docker` job).
