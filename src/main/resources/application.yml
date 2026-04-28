@@ -18,8 +18,9 @@ management:
         http:
           server:
             requests: true
-  server:
-    port: 8080
+  # No `server.port` — actuator endpoints share `server.port`. A separate
+  # management port duplicated `server.port: 8080` and forced e2e tests
+  # to pin both to the same kernel-allocated free port to avoid collision.
   endpoints:
     enabled-by-default: false
     web:

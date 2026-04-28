@@ -86,6 +86,71 @@ class HotelControllerIT {
     assertTrue(body.containsKey("content"), "paged response must include 'content'");
   }
 
+  @Test
+  void putUpdatesHotelAndReturns204() {
+    URI location = create(newHotel("put-happy"));
+    long createdId = extractId(location);
+
+    Hotel updated = newHotel("put-happy-updated");
+    updated.setId(createdId);
+
+    ResponseEntity<Void> putResponse =
+        restTemplate.exchange(location, HttpMethod.PUT, jsonRequest(updated), Void.class);
+    assertEquals(HttpStatus.NO_CONTENT, putResponse.getStatusCode());
+
+    ResponseEntity<Hotel> readBack =
+        restTemplate.exchange(location, HttpMethod.GET, jsonRequest(null), Hotel.class);
+    assertEquals(HttpStatus.OK, readBack.getStatusCode());
+    Hotel fetched = readBack.getBody();
+    assertNotNull(fetched);
+    assertEquals("put-happy-updated-name", fetched.getName(), "PUT must persist the new name");
+    assertEquals("put-happy-updated-city", fetched.getCity(), "PUT must persist the new city");
+  }
+
+  @Test
+  void paginationSizeOneReturnsAtMostOneItem() {
+    create(newHotel("page-edge-a"));
+    create(newHotel("page-edge-b"));
+    create(newHotel("page-edge-c"));
+
+    ResponseEntity<Map> response =
+        restTemplate.exchange(
+            HOTELS_PATH + "?page=0&size=1", HttpMethod.GET, jsonRequest(null), Map.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Map<String, Object> body = response.getBody();
+    assertNotNull(body);
+    List<?> content = (List<?>) body.get("content");
+    assertNotNull(content);
+    assertTrue(content.size() <= 1, "size=1 must yield at most one item, got " + content.size());
+  }
+
+  @Test
+  void paginationFarPastEndReturnsEmptyContent() {
+    create(newHotel("page-far"));
+
+    ResponseEntity<Map> response =
+        restTemplate.exchange(
+            HOTELS_PATH + "?page=999&size=10", HttpMethod.GET, jsonRequest(null), Map.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Map<String, Object> body = response.getBody();
+    assertNotNull(body);
+    List<?> content = (List<?>) body.get("content");
+    assertNotNull(content);
+    assertTrue(content.isEmpty(), "page far past totalPages must return empty content");
+  }
+
+  @Test
+  void paginationDefaultParamsReturn200() {
+    create(newHotel("page-default"));
+
+    ResponseEntity<Map> response =
+        restTemplate.exchange(HOTELS_PATH, HttpMethod.GET, jsonRequest(null), Map.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Map<String, Object> body = response.getBody();
+    assertNotNull(body);
+    assertTrue(body.containsKey("content"));
+  }
+
   private URI create(Hotel payload) {
     ResponseEntity<Void> createResponse =
         restTemplate.exchange(HOTELS_PATH, HttpMethod.POST, jsonRequest(payload), Void.class);

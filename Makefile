@@ -7,26 +7,23 @@ APP_VERSION := $(shell grep -m1 '<version>' pom.xml | sed -n 's:.*<version>\(.*\
 CURRENTTAG  := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 
 # === Tool Versions (pinned) ===
-# Java and Maven are pinned in .mise.toml and read natively by mise.
-# MAVEN_VER here only backs the deps-maven fallback used inside act/CI containers that lack mise.
+# Java, Maven, hadolint, act, trivy, gitleaks, actionlint, shellcheck,
+# container-structure-test are all pinned in .mise.toml. `make deps-install`
+# (or `mise install`) provisions them from a single source of truth; CI
+# inherits via `jdx/mise-action`. The constants below are the few tools
+# that don't have a mise/aqua entry yet.
 # renovate: datasource=maven depName=org.apache.maven:apache-maven
 MAVEN_VER := 3.9.15
 # renovate: datasource=github-releases depName=google/google-java-format extractVersion=^v(?<version>.*)$
 GJF_VERSION := 1.35.0
-# renovate: datasource=github-releases depName=hadolint/hadolint
-HADOLINT_VERSION := 2.14.0
-# renovate: datasource=github-releases depName=nektos/act
-ACT_VERSION := 0.2.87
-# renovate: datasource=github-releases depName=aquasecurity/trivy
-TRIVY_VERSION := 0.70.0
-# renovate: datasource=github-releases depName=gitleaks/gitleaks
-GITLEAKS_VERSION := 8.30.1
 # renovate: datasource=docker depName=minlag/mermaid-cli
 MERMAID_CLI_VERSION := 11.12.0
 
-# Ensure tools installed to ~/.local/bin are on PATH for every recipe —
-# needed inside the act runner and on fresh shells where rc files aren't sourced.
-export PATH := $(HOME)/.local/bin:$(PATH)
+# Ensure mise shims and ~/.local/bin are on PATH for every recipe —
+# `~/.local/share/mise/shims` is a flat dir of every mise-managed binary
+# (works without `eval "$(mise activate bash)"`); `~/.local/bin` covers
+# legacy curl installs and the `mise` binary itself on fresh shells.
+export PATH := $(HOME)/.local/share/mise/shims:$(HOME)/.local/bin:$(PATH)
 
 # Maven wrapper or system mvn
 MVN := mvn
@@ -78,49 +75,12 @@ deps-maven:
 		ln -sf "/opt/apache-maven-$(MAVEN_VER)/bin/mvn" /usr/local/bin/mvn; \
 	}
 
-#deps-hadolint: @ Install hadolint for Dockerfile linting
-deps-hadolint:
-	@command -v hadolint >/dev/null 2>&1 || { \
-		echo "Installing hadolint $(HADOLINT_VERSION)..."; \
-		mkdir -p $$HOME/.local/bin; \
-		curl -sSfL -o /tmp/hadolint https://github.com/hadolint/hadolint/releases/download/v$(HADOLINT_VERSION)/hadolint-Linux-x86_64; \
-		install -m 755 /tmp/hadolint $$HOME/.local/bin/hadolint; \
-		rm -f /tmp/hadolint; \
-	}
-
-#deps-act: @ Install act for running GitHub Actions locally
-deps-act: deps
-	@command -v act >/dev/null 2>&1 || { \
-		echo "Installing act $(ACT_VERSION)..."; \
-		mkdir -p $$HOME/.local/bin; \
-		curl -sSfL https://raw.githubusercontent.com/nektos/act/master/install.sh | bash -s -- -b $$HOME/.local/bin v$(ACT_VERSION); \
-	}
-
-#deps-trivy: @ Install Trivy for security scanning
-deps-trivy:
-	@command -v trivy >/dev/null 2>&1 || { \
-		echo "Installing trivy $(TRIVY_VERSION)..."; \
-		mkdir -p $$HOME/.local/bin; \
-		curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $$HOME/.local/bin v$(TRIVY_VERSION); \
-	}
-
-#deps-gitleaks: @ Install gitleaks for secret scanning
-deps-gitleaks:
-	@command -v gitleaks >/dev/null 2>&1 || { \
-		echo "Installing gitleaks $(GITLEAKS_VERSION)..."; \
-		mkdir -p $$HOME/.local/bin; \
-		curl -sSfL -o /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v$(GITLEAKS_VERSION)/gitleaks_$(GITLEAKS_VERSION)_linux_x64.tar.gz"; \
-		tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks; \
-		install -m 755 /tmp/gitleaks $$HOME/.local/bin/gitleaks; \
-		rm -f /tmp/gitleaks /tmp/gitleaks.tar.gz; \
-	}
-
 #deps-check: @ Show required tools and installation status
 deps-check:
 	@echo "--- Tool status ---"
-	@for tool in java mvn docker hadolint act trivy gitleaks; do \
-		printf "  %-16s " "$$tool:"; \
-		command -v $$tool >/dev/null 2>&1 && echo "installed" || echo "NOT installed"; \
+	@for tool in java mvn docker mise hadolint act trivy gitleaks actionlint shellcheck container-structure-test; do \
+		printf "  %-26s " "$$tool:"; \
+		command -v $$tool >/dev/null 2>&1 && echo "installed" || echo "NOT installed (run: make deps-install)"; \
 	done
 
 #clean: @ Remove build artifacts
@@ -159,29 +119,42 @@ format-check: $(GJF_JAR)
 			--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
 			-jar $(GJF_JAR) --set-exit-if-changed --dry-run > /dev/null
 
-#lint: @ Run compiler warnings-as-errors check
+#lint: @ Compiler warnings-as-errors + Checkstyle (google_checks.xml, severity=error)
 lint: deps
 	@$(MVN) -B validate
+	@$(MVN) -B checkstyle:check
 	@$(MVN) -B compile -Dmaven.compiler.failOnWarning=true -q
 
-#lint-docker: @ Lint the Dockerfile with hadolint
-lint-docker: deps-hadolint
+#lint-docker: @ Lint the Dockerfile with hadolint (provisioned by mise)
+lint-docker:
 	@hadolint Dockerfile
 	@hadolint Dockerfile.maven-host-m2-cache
 
-#trivy-fs: @ Scan filesystem for vulnerabilities, secrets, and misconfigurations
-trivy-fs: deps-trivy
+#lint-ci: @ Lint GitHub Actions workflows with actionlint (provisioned by mise; uses shellcheck under the hood)
+lint-ci:
+	@actionlint .github/workflows/*.yml
+
+#trivy-fs: @ Scan filesystem for vulnerabilities, secrets, and misconfigurations (provisioned by mise)
+trivy-fs:
 	@trivy fs --scanners vuln,secret,misconfig --severity CRITICAL,HIGH .
 
-#secrets: @ Scan for hardcoded secrets with gitleaks
-secrets: deps-gitleaks
-	@gitleaks detect --source . --verbose --redact
+#secrets: @ Scan working tree for hardcoded secrets with gitleaks (provisioned by mise)
+secrets:
+	@gitleaks detect --source . --no-git --verbose --redact
 
-#cve-check: @ Run OWASP dependency vulnerability scan
+#deps-prune: @ List declared but unused / undeclared but used Maven dependencies
+deps-prune: deps
+	@$(MVN) -B dependency:analyze
+
+#deps-prune-check: @ Fail the build on any used-undeclared or unused-declared Maven dependency
+deps-prune-check: deps
+	@$(MVN) -B dependency:analyze -DfailOnWarning=true
+
+#cve-check: @ Run OWASP dependency vulnerability scan (CVSS >= 7 blocks; matches the Trivy image scan threshold)
 cve-check: deps
 	@$(MVN) -B org.owasp:dependency-check-maven:check \
 		$$([ -n "$$NVD_API_KEY" ] && echo "-DnvdApiKey=$$NVD_API_KEY") \
-		-DfailBuildOnCVSS=9
+		-DfailBuildOnCVSS=7
 
 #vulncheck: @ Alias for cve-check
 vulncheck: cve-check
@@ -190,6 +163,14 @@ vulncheck: cve-check
 mermaid-lint:
 	@command -v docker >/dev/null 2>&1 || { echo "ERROR: docker is required for mermaid-lint"; exit 1; }
 	@set -euo pipefail; \
+	IMG="minlag/mermaid-cli:$(MERMAID_CLI_VERSION)"; \
+	if ! docker image inspect "$$IMG" >/dev/null 2>&1; then \
+		for attempt in 1 2 3; do \
+			if docker pull "$$IMG"; then break; fi; \
+			echo "  Pull attempt $$attempt failed; retrying in $$((attempt * 5))s..."; \
+			sleep $$((attempt * 5)); \
+		done; \
+	fi; \
 	MD_FILES=$$(grep -lF '```mermaid' README.md CLAUDE.md 2>/dev/null || true); \
 	if [ -z "$$MD_FILES" ]; then \
 		echo "No Mermaid blocks found — skipping."; \
@@ -199,8 +180,8 @@ mermaid-lint:
 	for md in $$MD_FILES; do \
 		echo "Validating Mermaid blocks in $$md..."; \
 		LOG=$$(mktemp); \
-		if docker run --rm -v "$$PWD:/data" \
-			minlag/mermaid-cli:$(MERMAID_CLI_VERSION) \
+		if docker run --rm -v "$$PWD:/data:ro" \
+			"$$IMG" \
 			-i "/data/$$md" -o "/tmp/$$(basename $$md .md).svg" >"$$LOG" 2>&1; then \
 			echo "  PASS: all blocks rendered cleanly."; \
 		else \
@@ -215,20 +196,37 @@ mermaid-lint:
 		exit 1; \
 	fi
 
+# `cve-check` is deliberately NOT in `static-check` — the OWASP NVD database
+# download dominates runtime (minutes, not seconds) and would slow the
+# fast-feedback loop that contributors run on every commit. CVE coverage
+# is provided by:
+#   * Trivy image scan (CRITICAL/HIGH) in the docker job — every push
+#   * `cve-check` CI job — tag pushes + weekly schedule
+# Run `make cve-check` locally before tagging a release.
 #static-check: @ Run all quality and security checks (composite gate)
-static-check: format-check lint lint-docker mermaid-lint trivy-fs secrets
+static-check: format-check lint lint-docker lint-ci mermaid-lint trivy-fs secrets deps-prune-check
 	@echo "Static check passed."
 
 #integration-test: @ Run integration tests (*IT.java via Failsafe)
 integration-test: deps
 	@$(MVN) -B verify -P integration-test
 
+#e2e: @ Run end-to-end smoke test against the packaged JAR (background process + curl)
+e2e: build
+	@./e2e/smoke.sh
+
 #image-build: @ Build Docker image (multi-stage)
 image-build: build
 	@docker buildx build --load -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
+#image-test: @ Validate image structure (USER, ENTRYPOINT, layout) via container-structure-test
+image-test: image-build
+	@container-structure-test test \
+		--image $(DOCKER_IMAGE):$(DOCKER_TAG) \
+		--config container-structure-test.yaml
+
 #image-run: @ Run Docker container
-image-run: image-stop
+image-run: image-build image-stop
 	@docker run --rm -d -p 8080:8080 --name $(APP_NAME) $(DOCKER_IMAGE):$(DOCKER_TAG)
 
 #image-stop: @ Stop Docker container
@@ -243,14 +241,18 @@ image-push: image-build
 ci: deps format-check lint test integration-test build
 	@echo "Local CI pipeline passed."
 
-#ci-run: @ Run GitHub Actions workflows locally via act
-ci-run: deps-act
+#ci-run: @ Run GitHub Actions workflows locally via act (per-job, fail-fast; act provisioned by mise)
+ci-run:
 	@docker container prune -f 2>/dev/null || true
 	@ACT_PORT=$$(shuf -i 40000-59999 -n 1); \
 	ARTIFACT_PATH=$$(mktemp -d -t act-artifacts.XXXXXX); \
-	act push --container-architecture linux/amd64 \
-		--artifact-server-port "$$ACT_PORT" \
-		--artifact-server-path "$$ARTIFACT_PATH"
+	for job in static-check test integration-test build e2e; do \
+		echo "=== act --job $$job ==="; \
+		act push --container-architecture linux/amd64 \
+			--artifact-server-port "$$ACT_PORT" \
+			--artifact-server-path "$$ARTIFACT_PATH" \
+			--job "$$job" || exit $$?; \
+	done
 
 #renovate-validate: @ Validate renovate.json configuration
 renovate-validate:
@@ -266,7 +268,7 @@ release:
 		git push origin $$newtag && \
 		echo "Done."'
 
-.PHONY: help deps deps-install deps-maven deps-hadolint deps-act deps-trivy deps-gitleaks deps-check \
-	clean build test run format format-check lint lint-docker mermaid-lint trivy-fs secrets \
-	cve-check vulncheck static-check integration-test image-build image-run image-stop image-push \
+.PHONY: help deps deps-install deps-maven deps-check deps-prune deps-prune-check \
+	clean build test run format format-check lint lint-docker lint-ci mermaid-lint trivy-fs secrets \
+	cve-check vulncheck static-check integration-test e2e image-build image-test image-run image-stop image-push \
 	ci ci-run renovate-validate release

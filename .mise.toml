@@ -9,3 +9,31 @@
 java = "temurin-25.0.2+10.0.LTS"
 # renovate: datasource=maven depName=org.apache.maven:apache-maven
 maven = "3.9.15"
+
+# Static-check + CI tooling installed via mise's aqua backend so a single
+# `mise install` (or `make deps-install`) provides every CLI the Makefile
+# composite gates need. CI inherits the same versions through `jdx/mise-action`.
+# renovate: datasource=github-releases depName=hadolint/hadolint extractVersion=^v(?<version>.*)$
+"aqua:hadolint/hadolint" = "2.14.0"
+# renovate: datasource=github-releases depName=nektos/act extractVersion=^v(?<version>.*)$
+"aqua:nektos/act" = "0.2.87"
+# renovate: datasource=github-releases depName=aquasecurity/trivy extractVersion=^v(?<version>.*)$
+"aqua:aquasecurity/trivy" = "0.70.0"
+# renovate: datasource=github-releases depName=gitleaks/gitleaks extractVersion=^v(?<version>.*)$
+"aqua:gitleaks/gitleaks" = "8.30.1"
+# renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.*)$
+"aqua:rhysd/actionlint" = "1.7.7"
+# renovate: datasource=github-releases depName=koalaman/shellcheck extractVersion=^v(?<version>.*)$
+"aqua:koalaman/shellcheck" = "0.10.0"
+# renovate: datasource=github-releases depName=GoogleContainerTools/container-structure-test extractVersion=^v(?<version>.*)$
+"aqua:GoogleContainerTools/container-structure-test" = "1.19.3"
+
+# Tools NOT in mise:
+#   - google-java-format: ships as a JAR (not a binary) — aqua/ubi backends
+#     target static binaries. Curl-downloaded into ~/.cache and invoked
+#     via the GJF_VERSION constant in the Makefile (Renovate-tracked).
+#   - mermaid-cli: run as a Docker image (minlag/mermaid-cli) — not a
+#     local CLI.
+#   - Maven (deps-maven): intentional curl-from-archive fallback for CI
+#     containers that lack mise. The mise-managed Maven above is the
+#     primary path.

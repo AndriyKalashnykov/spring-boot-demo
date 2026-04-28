@@ -1,4 +1,4 @@
-name: Cleanup
+name: Cleanup old workflow runs
 
 on:
   schedule:
@@ -8,10 +8,11 @@ on:
 
 permissions:
   actions: write
+  contents: read
 
 concurrency:
   group: cleanup-${{ github.workflow }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   cleanup-runs:
@@ -33,14 +34,33 @@ jobs:
           | xargs -r -I{} gh run delete {} --repo "${{ github.repository }}"
 
   cleanup-caches:
-    name: Delete old workflow caches
+    name: Delete caches whose source branch no longer exists
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Delete old caches
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Prune orphaned caches (keep main, default branch, tags)
         run: |
-          gh api "/repos/${{ github.repository }}/actions/caches" \
-            --paginate --jq '.actions_caches[].id' \
-          | xargs -r -I{} gh api -X DELETE "/repos/${{ github.repository }}/actions/caches/{}"
+          set -euo pipefail
+          DEFAULT_BRANCH=$(gh repo view "${{ github.repository }}" --json defaultBranchRef --jq '.defaultBranchRef.name')
+          # Existing branches (refs/heads/*) and tags (refs/tags/*) — these get kept.
+          mapfile -t ALIVE_REFS < <(
+            gh api "/repos/${{ github.repository }}/branches" --paginate --jq '.[].name' | sed 's|^|refs/heads/|';
+            gh api "/repos/${{ github.repository }}/tags"     --paginate --jq '.[].name' | sed 's|^|refs/tags/|'
+          )
+          ALIVE_REFS+=("refs/heads/main" "refs/heads/${DEFAULT_BRANCH}")
+          gh api "/repos/${{ github.repository }}/actions/caches" --paginate --jq '.actions_caches[] | "\(.id) \(.ref)"' \
+          | while read -r id ref; do
+              keep=false
+              for alive in "${ALIVE_REFS[@]}"; do
+                if [[ "$ref" == "$alive" ]]; then keep=true; break; fi
+              done
+              if [[ "$keep" == false ]]; then
+                echo "Deleting cache id=$id ref=$ref"
+                gh api -X DELETE "/repos/${{ github.repository }}/actions/caches/$id" >/dev/null || true
+              fi
+            done

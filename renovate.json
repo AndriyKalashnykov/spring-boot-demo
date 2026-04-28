@@ -8,7 +8,6 @@
     "maven",
     "github-actions",
     "dockerfile",
-    "docker-compose",
     "mise",
     "custom.regex"
   ],
@@ -34,10 +33,10 @@
     },
     {
       "customType": "regex",
-      "description": "Update .mise.toml tool pins via inline renovate comments",
+      "description": "Update .mise.toml tool pins via inline renovate comments (supports both bare keys like `java` and quoted keys like `\"aqua:owner/repo\"`)",
       "managerFilePatterns": ["/^\\.mise\\.toml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n[a-zA-Z_-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n(?:[a-zA-Z_-]+|\"[^\"]+\")\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ]
     },
     {
