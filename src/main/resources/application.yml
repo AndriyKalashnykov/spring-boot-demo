@@ -1,6 +1,12 @@
 spring:
   jmx:
     enabled: false
+  jpa:
+    # Explicit configuration silences Spring Boot's default-enabled warning.
+    # `true` keeps the existing behaviour (the entity manager stays open through
+    # view rendering); for a high-throughput service this should be `false` to
+    # avoid lazy-loading queries during response rendering.
+    open-in-view: true
 
 server:
   port: 8080
@@ -46,6 +52,15 @@ management:
       enabled: true
     sessions:
       enabled: true
+
+springdoc:
+  # Explicit configuration silences SpringDoc's default-enabled warnings.
+  # The demo intentionally publishes /v3/api-docs and Swagger UI; in production
+  # services these typically flip to `false` so the API surface isn't exposed.
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 
 info:
   build:
