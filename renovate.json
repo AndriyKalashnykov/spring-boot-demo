@@ -33,10 +33,10 @@
     },
     {
       "customType": "regex",
-      "description": "Update .mise.toml tool pins via inline renovate comments (supports both bare keys like `java` and quoted keys like `\"aqua:owner/repo\"`)",
+      "description": "Update .mise.toml bare-key tool pins via inline renovate comments. Aqua entries (\"aqua:owner/repo\") are deliberately NOT matched — Renovate's built-in `mise` manager extracts those natively, and matching here would create duplicate PRs per tool.",
       "managerFilePatterns": ["/^\\.mise\\.toml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n(?:[a-zA-Z_-]+|\"[^\"]+\")\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n[a-zA-Z_-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ]
     },
     {
