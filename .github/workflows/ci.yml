@@ -4,45 +4,91 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    paths-ignore:
-      - '*.md'
-      - '!CLAUDE.md'
-      - 'docs/**'
-      - 'img/**'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.claudeignore'
-      - '.claude/**'
-      - '**.png'
-      - '**.jpg'
-      - '**.gif'
-      - '**.svg'
   pull_request:
-    paths-ignore:
-      - '*.md'
-      - '!CLAUDE.md'
-      - 'docs/**'
-      - 'img/**'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.claudeignore'
-      - '.claude/**'
-      - '**.png'
-      - '**.jpg'
-      - '**.gif'
-      - '**.svg'
   workflow_call:
   workflow_dispatch:
+  schedule:
+    # Weekly CVE re-scan against released artefact (Mondays 06:00 UTC).
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ---------------------------------------------------------------------
+  # `changes` detects whether the push/PR touches code/build/CI files.
+  # Heavy jobs are gated on `outputs.code == 'true'`; doc-only diffs
+  # short-circuit to a green `ci-pass`. This avoids the Repository-
+  # Rulesets deadlock that `paths-ignore` triggers (no workflow run →
+  # required `ci-pass` never reports → merge blocked).
+  # ---------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            code:
+              - '!**/*.md'
+              - 'CLAUDE.md'
+              - '!docs/**'
+              - '!img/**'
+              - '!LICENSE'
+              - '!.gitignore'
+              - '!.claudeignore'
+              - '!.claude/**'
+              - '!**/*.png'
+              - '!**/*.jpg'
+              - '!**/*.gif'
+              - '!**/*.svg'
+
+  # ---------------------------------------------------------------------
+  # Composite quality gate: format-check, lint (compile-warning gate),
+  # hadolint, actionlint, mermaid-lint, Trivy filesystem scan, gitleaks.
+  # First job in the graph — fail fast on cheap checks before spinning
+  # up Maven for build/test/integration-test.
+  # ---------------------------------------------------------------------
+  static-check:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up toolchain (mise)
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          install: true
+          cache: true
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: Static check
+        run: make static-check
+
   test:
+    needs: [changes, static-check]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -66,7 +112,8 @@ jobs:
         run: make test
 
   integration-test:
-    needs: [test]
+    needs: [changes, static-check]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -99,7 +146,8 @@ jobs:
           retention-days: 14
 
   build:
-    needs: [test]
+    needs: [changes, static-check]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -130,16 +178,99 @@ jobs:
           path: target/*.jar
           retention-days: 7
 
-  # Tag-gated publish pipeline: pre-push hardening (gates 1-3) followed by
-  # multi-arch push + cosign keyless signing.
-  #   Gate 1: single-arch build with load: true for scanning/smoke testing
+  # ---------------------------------------------------------------------
+  # End-to-end smoke test against the packaged JAR. Boots on a kernel-
+  # allocated free port (`server.port=0`), runs CRUD + health + swagger
+  # + commit-info assertions, tears down. Catches regressions in the
+  # built artefact that integration tests (in-process) cannot — bad
+  # main-class, missing dependencies in BOOT-INF, broken layered jar.
+  # ---------------------------------------------------------------------
+  e2e:
+    needs: [changes, build]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up toolchain (mise)
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          install: true
+          cache: true
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: E2E smoke
+        run: make e2e
+
+      - name: Upload e2e log
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        continue-on-error: true
+        with:
+          name: e2e-smoke-log
+          path: target/e2e-smoke.log
+          retention-days: 14
+
+  # ---------------------------------------------------------------------
+  # OWASP dependency-check. Runs on tag pushes, weekly schedule, and
+  # manual dispatch — too slow for every push (NVD download dominates).
+  # NVD database cached keyed on pom.xml.
+  # ---------------------------------------------------------------------
+  cve-check:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up toolchain (mise)
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          install: true
+          cache: true
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: Cache NVD database
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ hashFiles('**/pom.xml') }}
+          restore-keys: nvd-
+
+      - name: CVE check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: make cve-check
+
+  # ---------------------------------------------------------------------
+  # Tag-gated publish pipeline: pre-push hardening (gates 1-3) followed
+  # by single-arch (linux/amd64) push + cosign keyless signing.
+  #   Gate 1: single-arch build with load: true for scanning/smoke
   #   Gate 2: Trivy CRITICAL/HIGH blocking (vuln/secret/misconfig)
-  #   Gate 3: Spring Boot boot-marker smoke test (no external deps required)
-  # Main-branch pushes stop at build — rotating registry auth at release
-  # time is cheaper than on every commit.
+  #   Gate 3: Spring Boot boot-marker smoke test (no external deps)
+  #   Gate 4: container-structure-test (USER, ENTRYPOINT, layout)
+  # On non-tag runs the docker job builds (validating the Dockerfile and
+  # full pipeline) but skips publish/sign — release-day regressions are
+  # caught on every push, not only on tags.
+  # ---------------------------------------------------------------------
   docker:
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    needs: [test, integration-test, build]
+    needs: [changes, build, test, integration-test]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -150,9 +281,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
 
@@ -162,29 +290,17 @@ jobs:
         with:
           # Repo-namespace GHCR path (ghcr.io/<owner>/<repo>/<pkg>) — the
           # user-namespace form ghcr.io/<owner>/<pkg> cannot be created by
-          # GITHUB_TOKEN on user accounts (write_package denied). See
-          # /harden-image-pipeline "GHCR namespace rule".
+          # GITHUB_TOKEN on user accounts (write_package denied).
           images: ghcr.io/${{ github.repository }}/app
-          # Convention: bare semver on Docker image tags, `v`-prefix on git
-          # tags. The `{{version}}` template strips the `v` from git tag
-          # `vX.Y.Z` automatically, matching how Docker Hub official images
-          # are tagged (mongo:8.0.20, node:24, postgres:17, alpine:3.20).
+          # Bare semver on Docker tags, `v`-prefix on git tags.
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix=sha-
           flavor: |
-            latest=true
+            latest=${{ startsWith(github.ref, 'refs/tags/v') }}
 
-      # ----------------------------------------------------------------
       # GATE 1: Build single-arch image locally for security checks.
-      # `load: true` lands the image in the local Docker daemon so the
-      # next steps can scan/run it. Multi-arch + push cannot be combined
-      # with `load: true` per Docker's docs, so we build twice: once
-      # locally for gating, then again multi-arch for the push. The
-      # second build is ~95% cache-hit from this one (type=gha).
-      # ----------------------------------------------------------------
       - name: Build image for scan
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
@@ -196,11 +312,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ----------------------------------------------------------------
       # GATE 2: Trivy image scan — CRITICAL/HIGH blocks the release.
-      # `ignore-unfixed: true` skips CVEs with no upstream fix yet —
-      # blocking on those creates churn without resolution.
-      # ----------------------------------------------------------------
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -210,13 +322,7 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
 
-      # ----------------------------------------------------------------
       # GATE 3: Spring Boot boot-marker smoke test.
-      # Watch the container logs for Spring Boot's standard "started"
-      # line. Proves the JAR is well-formed, the JVM starts, Spring
-      # boots, and embedded Tomcat begins listening — without needing
-      # any external dependencies.
-      # ----------------------------------------------------------------
       - name: Smoke test
         run: |
           set -euo pipefail
@@ -224,7 +330,7 @@ jobs:
           echo "Waiting up to 90s for Spring Boot to boot..."
           end=$((SECONDS + 90))
           while [ $SECONDS -lt $end ]; do
-            if docker logs smoke 2>&1 | grep -qE 'Started [A-Z][a-zA-Z]+Application in|Tomcat started on port|Netty started on port'; then
+            if docker logs smoke 2>&1 | grep -qE 'Started [A-Za-z]+ in [0-9]+\.[0-9]+ seconds|Tomcat started on port|Netty started on port'; then
               echo "PASS: Spring Boot booted"
               docker rm -f smoke >/dev/null
               exit 0
@@ -241,14 +347,25 @@ jobs:
         if: always()
         run: docker rm -f smoke 2>/dev/null || true
 
-      # ----------------------------------------------------------------
-      # All gates passed → publish multi-arch.
-      # `provenance: false` + `sbom: false` keep the image index free of
-      # unknown/unknown attestation manifests, so the GHCR "OS / Arch"
-      # tab renders cleanly. Cosign signing below provides supply-chain
-      # verification via Sigstore instead of in-manifest attestations.
-      # ----------------------------------------------------------------
+      # GATE 4: container-structure-test — validates USER, ENTRYPOINT,
+      # WORKDIR, exposed ports, layered-jar layout. Catches Dockerfile
+      # drift that compiles but breaks runtime contracts.
+      - name: Set up toolchain (mise — for container-structure-test)
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          install: true
+          cache: true
+
+      - name: Container structure test
+        run: |
+          docker tag spring-boot-demo:scan spring-boot-demo:0.0.1
+          container-structure-test test \
+            --image spring-boot-demo:0.0.1 \
+            --config container-structure-test.yaml
+
+      # All gates passed → publish multi-arch on tag pushes only.
       - name: Log in to GHCR
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
           registry: ghcr.io
@@ -261,8 +378,8 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
+          platforms: linux/amd64
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
@@ -270,18 +387,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ----------------------------------------------------------------
       # Post-push: cosign keyless signing.
-      # Signs the manifest digest with Sigstore via OIDC (no long-lived
-      # private keys). Consumers verify with:
-      #   cosign verify ghcr.io/<owner>/<repo>/app:<tag> \
-      #     --certificate-identity-regexp 'https://github\.com/<owner>/<repo>/.+' \
-      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
-      # ----------------------------------------------------------------
       - name: Install cosign
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Sign image with cosign
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.push.outputs.digest }}
@@ -295,13 +407,13 @@ jobs:
             cosign sign --yes "${tag}@${DIGEST}"
           done <<< "${TAGS}"
 
-  # Branch-protection aggregator. Single required status check — jobs can be
-  # added or renamed without touching Settings. Skipped jobs (docker on
-  # non-tag pushes) do NOT count as failure — only `failure` results trip
-  # the gate.
+  # Branch-protection aggregator. Single required status check — jobs can
+  # be added or renamed without touching Settings. Skipped jobs (cve-check
+  # on non-tag pushes, all heavy jobs on doc-only diffs) do NOT count as
+  # failure — only `failure` results trip the gate.
   ci-pass:
     if: always()
-    needs: [test, integration-test, build, docker]
+    needs: [changes, static-check, test, integration-test, build, e2e, cve-check, docker]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

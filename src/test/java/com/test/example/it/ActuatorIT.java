@@ -36,6 +36,33 @@ class ActuatorIT {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  void healthIncludesCustomHotelServiceComponent() {
+    // application.yml sets show-details=always + show-components=always so the
+    // /actuator/health body exposes the components map. The custom HotelServiceHealth
+    // contributor registers under a Spring-derived bean-name key — match by substring
+    // instead of guessing whether Spring trims "Health" from "HotelServiceHealth".
+    ResponseEntity<Map> response = json("/actuator/health", Map.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    Map<String, Object> body = response.getBody();
+    assertNotNull(body);
+    Map<String, Object> components = (Map<String, Object>) body.get("components");
+    assertNotNull(components, "/actuator/health must expose 'components' (show-components=always)");
+    String hotelKey =
+        components.keySet().stream()
+            .filter(k -> k.toLowerCase().contains("hotel"))
+            .findFirst()
+            .orElse(null);
+    assertNotNull(
+        hotelKey,
+        "components must include a custom hotel-service indicator (got keys: "
+            + components.keySet()
+            + ")");
+    Map<String, Object> hotelService = (Map<String, Object>) components.get(hotelKey);
+    assertEquals("UP", hotelService.get("status"));
+  }
+
+  @Test
   void infoEndpointResponds() {
     ResponseEntity<Map> response = json("/actuator/info", Map.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());

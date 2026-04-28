@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# renovate: datasource=docker depName=maven
+MAVEN_IMAGE_TAG="3-eclipse-temurin-25"
+
 LAUNCH_DIR=$(pwd); SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd $SCRIPT_DIR; cd ..; SCRIPT_PARENT_DIR=$(pwd);
 cd $SCRIPT_PARENT_DIR
 
-docker run -v ~/.m2:/root/.m2 -v "$PWD":/usr/src -w /usr/src maven:3-eclipse-temurin-25 mvn clean package -DskipTests=true -Dmaven.test.skip=true
+docker run -v ~/.m2:/root/.m2 -v "$PWD":/usr/src -w /usr/src "maven:${MAVEN_IMAGE_TAG}" mvn clean package -DskipTests=true -Dmaven.test.skip=true
 
 cd $LAUNCH_DIR

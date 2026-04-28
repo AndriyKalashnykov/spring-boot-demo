@@ -12,12 +12,13 @@ make image-build        # Build Docker image
 make ci                 # Full local CI pipeline
 ```
 
-Two test layers:
+Three test layers:
 
 | Target | Layer | Stack | Runtime |
 |--------|-------|-------|---------|
 | `make test` | Unit | Spring MockMvc, in-process | seconds |
 | `make integration-test` | Integration | `*IT.java` via Maven Failsafe, real Tomcat on random port, H2 backend | tens of seconds |
+| `make e2e` | E2E | Boots the packaged JAR on a kernel-allocated free port, curl-based CRUD + Actuator + Swagger smoke (`e2e/smoke.sh`) | ~10 seconds |
 
 See `make help` for the full target list.
 
@@ -25,8 +26,10 @@ See `make help` for the full target list.
 
 - `src/main/java/com/test/example/` -- Application source (Spring Boot REST)
 - `src/test/java/` -- Tests (MockMvc)
-- `pom.xml` -- Maven build config (Spring Boot 4.0.5, Java 25)
+- `pom.xml` -- Maven build config (Spring Boot 4.0.6, Java 25)
 - `Dockerfile` / `Dockerfile.maven-host-m2-cache` -- Multi-stage Docker builds
+- `container-structure-test.yaml` -- USER/ENTRYPOINT/layered-jar layout assertions (run via `make image-test`)
+- `e2e/smoke.sh` -- End-to-end smoke test (boots the packaged JAR, curl-based CRUD + Actuator + Swagger; run via `make e2e`)
 - `scripts/` -- Docker image build scripts (multi-stage, Buildpacks, Kaniko, Spring Boot layered jar, m2-cache) + local run helpers
 - `LICENSE` -- MIT
 - `skaffold.yaml` -- Skaffold config (Paketo buildpacks)
@@ -39,12 +42,12 @@ See `make help` for the full target list.
 
 - **Group/Artifact**: `com.test:spring-boot-demo:0.0.1`
 - **Java version**: 25 (Temurin LTS, pinned in `.mise.toml` + `.java-version`)
-- **Spring Boot**: 4.0.5 (Spring Framework 7, embedded Tomcat 11)
+- **Spring Boot**: 4.0.6 (Spring Framework 7, embedded Tomcat 11)
 - **Default branch**: `main`
 - **Endpoints**: REST CRUD at `/example/v1/hotels`, Swagger UI at `/swagger-ui/index.html`, OpenAPI 3 JSON at `/v3/api-docs`, Actuator at `/actuator/*`
 - **Database**: H2 in-memory (JPA/Hibernate)
 - **Version manager**: mise (manages Java + Maven)
-- **Architecture diagrams**: Mermaid C4Container + sequence block inline in README; validated by `make mermaid-lint` (Docker `minlag/mermaid-cli`, pinned in `Makefile`). Wired into `make static-check`.
+- **Architecture diagrams**: Mermaid C4Context (hero) + C4Container + sequence block inline in README; validated by `make mermaid-lint` (Docker `minlag/mermaid-cli`, pinned in `Makefile`). Wired into `make static-check`.
 
 ## CI/CD
 
@@ -52,10 +55,19 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | File | Triggers | Purpose |
 |----------|------|----------|---------|
-| CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch | Test → Integration-test → Build → Docker (scan + smoke + cosign sign + push) → ci-pass aggregator |
-| Cleanup | `cleanup-runs.yml` | weekly (Sunday) + manual + `workflow_call` | Delete old workflow runs and caches |
+| CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch, weekly schedule (`cve-check` only) | changes (paths-filter) → static-check → (test, integration-test, build) → (e2e, docker = scan + smoke + container-structure-test + tag-gated `linux/amd64` push + sign) + cve-check (tags + weekly) → ci-pass aggregator |
+| Cleanup old workflow runs | `cleanup-runs.yml` | weekly (Sunday) + manual + `workflow_call` | Delete old workflow runs and orphaned caches (preserves `main`, default branch, tags) |
 
-No repo-level secrets required — the `docker` job uses `GITHUB_TOKEN` for GHCR auth and Sigstore OIDC for cosign signing. Image is published to `ghcr.io/andriykalashnykov/spring-boot-demo/app` (OCI refs are lowercase).
+`NVD_API_KEY` is an optional secret used by the `cve-check` job (free key from NIST NVD; without it OWASP dependency-check still runs but throttled). The `docker` job uses `GITHUB_TOKEN` for GHCR auth and Sigstore OIDC for cosign signing. Image is published to `ghcr.io/andriykalashnykov/spring-boot-demo/app` (OCI refs are lowercase).
+
+### Historical secret leaks (rotated; informational)
+
+Two pre-Spring-Boot-4 commits introduced secrets that were later removed from the working tree but remain in git history. `make secrets` uses `gitleaks --no-git` (working-tree only) so they do not re-fire, but anyone running a full-history scan (`gitleaks detect --source .` without `--no-git`) will see them. Verify these credentials have been rotated; do not reintroduce.
+
+| Fingerprint | Commit date | File | Rule |
+|-------------|-------------|------|------|
+| `bededf26e6cddae9d3baf6b56ecd989831dd233d:config.json:generic-api-key:1` | 2020-08-22 | `config.json` (removed) | generic-api-key |
+| `d0585218c825162913ba1c895a901143eeb32ff6:plain.cfg:private-key:19` | 2020-09-24 | `plain.cfg` (removed) | private-key |
 
 ## Upgrade Backlog
 

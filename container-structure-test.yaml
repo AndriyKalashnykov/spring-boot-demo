@@ -1,0 +1,38 @@
+schemaVersion: 2.0.0
+
+# container-structure-test assertions for spring-boot-demo:<tag>.
+# Validates immutable image properties after `make image-build` so a
+# Dockerfile drift (lost USER, wrong ENTRYPOINT, missing JarLauncher
+# class path, broken layout) is caught BEFORE the cosign signing step.
+
+metadataTest:
+  user: "65532:65532"
+  workdir: "/application"
+  exposedPorts: ["8080"]
+  entrypoint:
+    - "java"
+    - "org.springframework.boot.loader.launch.JarLauncher"
+
+fileExistenceTests:
+  - name: "Spring Boot loader present"
+    path: "/application/org/springframework/boot/loader/launch/JarLauncher.class"
+    shouldExist: true
+  - name: "Application BOOT-INF/classes/com/test/example present"
+    path: "/application/BOOT-INF/classes/com/test/example/Application.class"
+    shouldExist: true
+  - name: "No /etc/shadow readable by app user"
+    path: "/etc/shadow"
+    shouldExist: true
+    permissions: "-rw-r-----"
+
+commandTests:
+  - name: "java is executable"
+    command: "java"
+    args: ["-version"]
+    expectedError: ["openjdk version"]
+    exitCode: 0
+  - name: "id reports the non-root nonroot user"
+    command: "id"
+    args: ["-u"]
+    expectedOutput: ["65532\n"]
+    exitCode: 0
