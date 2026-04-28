@@ -24,7 +24,7 @@ maven = "3.9.15"
 # renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.*)$
 "aqua:rhysd/actionlint" = "1.7.7"
 # renovate: datasource=github-releases depName=koalaman/shellcheck extractVersion=^v(?<version>.*)$
-"aqua:koalaman/shellcheck" = "0.10.0"
+"aqua:koalaman/shellcheck" = "0.11.0"
 # renovate: datasource=github-releases depName=GoogleContainerTools/container-structure-test extractVersion=^v(?<version>.*)$
 "aqua:GoogleContainerTools/container-structure-test" = "1.22.1"
 
