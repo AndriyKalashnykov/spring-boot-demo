@@ -17,7 +17,7 @@ MAVEN_VER := 3.9.15
 # renovate: datasource=github-releases depName=google/google-java-format extractVersion=^v(?<version>.*)$
 GJF_VERSION := 1.35.0
 # renovate: datasource=docker depName=minlag/mermaid-cli
-MERMAID_CLI_VERSION := 11.12.0
+MERMAID_CLI_VERSION := 11.14.0
 
 # Ensure mise shims and ~/.local/bin are on PATH for every recipe —
 # `~/.local/share/mise/shims` is a flat dir of every mise-managed binary
