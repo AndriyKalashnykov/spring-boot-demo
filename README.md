@@ -269,8 +269,11 @@ Run `make help` to see the full list.
 | Target | Description |
 |--------|-------------|
 | `make help` | List available tasks |
-| `make deps` | Verify required tools are installed (java, mvn) |
+| `make deps` | Verify required tools and provision mise-managed CLIs |
 | `make deps-install` | Install Java + Maven via mise (reads `.mise.toml`) |
+| `make deps-maven` | Install Maven from Apache archives (CI-container fallback) |
+| `make deps-docker` | Verify Docker is installed |
+| `make deps-node` | Verify Node.js/npx is available (used by `renovate-validate`) |
 | `make deps-check` | Show installation status of every required tool |
 
 ### Build & Run
@@ -298,13 +301,14 @@ Run `make help` to see the full list.
 | `make lint` | Compiler warnings-as-errors + Checkstyle (`google_checks.xml`, `severity=error`) |
 | `make lint-docker` | Lint both Dockerfiles with `hadolint` |
 | `make lint-ci` | Lint GitHub Actions workflows with `actionlint` |
+| `make lint-scripts-exec` | Verify all `scripts/*.sh` and `e2e/*.sh` are committed with the executable bit set |
 | `make mermaid-lint` | Validate Mermaid blocks with pinned `minlag/mermaid-cli` |
 | `make trivy-fs` | Scan filesystem for CVEs, secrets, misconfigurations |
 | `make secrets` | Scan repo for leaked secrets with `gitleaks` |
 | `make cve-check` | OWASP dependency-check vulnerability scan |
 | `make deps-prune` | Show declared-but-unused / used-undeclared Maven dependencies |
 | `make deps-prune-check` | Fail on any used-undeclared or unused-declared dependency (manual; not in CI — Spring Boot starters create false positives) |
-| `make static-check` | Composite gate: format-check, lint, lint-docker, lint-ci, mermaid-lint, trivy-fs, secrets |
+| `make static-check` | Composite gate: format-check, lint, lint-docker, lint-ci, lint-scripts-exec, mermaid-lint, trivy-fs, secrets, deps-prune-check |
 
 ### Docker
 
@@ -320,7 +324,7 @@ Run `make help` to see the full list.
 
 | Target | Description |
 |--------|-------------|
-| `make ci` | Full local CI pipeline (format-check + lint + test + build) |
+| `make ci` | Full local CI pipeline (`static-check` composite gate + test + integration-test + build) |
 | `make ci-run` | Run GitHub Actions workflows locally via [act](https://github.com/nektos/act) |
 | `make renovate-validate` | Validate `renovate.json` |
 
@@ -337,13 +341,13 @@ GitHub Actions runs on push to `main`, pull requests, `v*` tags, manual dispatch
 | Job | Triggers | Purpose |
 |-----|----------|---------|
 | `changes` | all | Path filter — gates heavy jobs on code/build/CI changes |
-| `static-check` | code diffs | `make static-check` — format-check, lint (Checkstyle), lint-docker, lint-ci, mermaid-lint, trivy-fs, secrets |
+| `static-check` | code diffs | `make static-check` — format-check, lint (Checkstyle), lint-docker, lint-ci, lint-scripts-exec, mermaid-lint, trivy-fs, secrets, deps-prune-check |
 | `test` | code diffs | `make test` — JUnit via Spring MockMvc |
 | `integration-test` | code diffs | `make integration-test` — `*IT.java` via Maven Failsafe |
 | `build` | code diffs | `make build` — packages the jar, uploads as artifact |
 | `e2e` | code diffs | `make e2e` — boots the packaged JAR on a free port, curl-based CRUD + Actuator + Swagger smoke |
 | `cve-check` | tags + weekly + dispatch | OWASP dependency-check; NVD database cached |
-| `docker` | code diffs (build always; push/sign tag-gated at step level) | Build, Trivy scan, smoke-test, container-structure-test, `linux/amd64` push (tag only), cosign sign (tag only) |
+| `docker` | code diffs (build always; push/sign tag-gated at step level) | Build, Trivy scan, smoke-test, container-structure-test, multi-arch (`linux/amd64`+`linux/arm64`) push (tag only), cosign sign (tag only) |
 | `ci-pass` | all | Aggregator gate for branch protection |
 
 A separate `Cleanup old workflow runs` workflow prunes old workflow runs and orphaned caches on a weekly schedule (Sunday 00:00 UTC) plus manual dispatch.
@@ -360,7 +364,7 @@ The `docker` job runs these gates **before** any image is pushed to GHCR. Any fa
 | 2 | Trivy image scan (CRITICAL/HIGH blocking) | Fixed CVEs in base image, OS packages, build layers | `aquasecurity/trivy-action` with `image-ref:` |
 | 3 | Spring Boot boot-marker smoke test | Image fails to start (classpath, JVM flags, config) | `docker run` + grep boot marker in logs |
 | 4 | container-structure-test | USER/ENTRYPOINT/WORKDIR/exposed-port drift, layered-jar layout regressions | `container-structure-test` against `container-structure-test.yaml` |
-| 5 | Build + push | Publishes `linux/amd64` to GHCR | `docker/build-push-action` with `push: true` |
+| 5 | Build + push | Publishes multi-arch (`linux/amd64`+`linux/arm64`) to GHCR | `docker/build-push-action` with `push: true` |
 | 6 | Cosign keyless OIDC signing | Sigstore signature on the manifest digest | `sigstore/cosign-installer` + `cosign sign` |
 
 Buildkit in-manifest attestations (`provenance`, `sbom`) are disabled so the image index stays free of `unknown/unknown` platform entries — this keeps the registry "OS / Arch" tab rendering correctly. Cosign keyless signing provides supply-chain verification.

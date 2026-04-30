@@ -10,8 +10,14 @@ CURRENTTAG  := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 # Java, Maven, hadolint, act, trivy, gitleaks, actionlint, shellcheck,
 # container-structure-test are all pinned in .mise.toml. `make deps-install`
 # (or `mise install`) provisions them from a single source of truth; CI
-# inherits via `jdx/mise-action`. The constants below are the few tools
-# that don't have a mise/aqua entry yet.
+# inherits via `jdx/mise-action`. The constants below are kept in the
+# Makefile because they cannot live in .mise.toml:
+#   - MAVEN_VER: Apache-archives fallback used by `deps-maven` for CI
+#     containers that lack mise (kept in sync with .mise.toml's `maven`).
+#   - GJF_VERSION: google-java-format ships as a JAR, not a binary —
+#     aqua/ubi backends only handle static binaries.
+#   - MERMAID_CLI_VERSION: mermaid-cli runs as a Docker image, not a
+#     local CLI.
 # renovate: datasource=maven depName=org.apache.maven:apache-maven
 MAVEN_VER := 3.9.15
 # renovate: datasource=github-releases depName=google/google-java-format extractVersion=^v(?<version>.*)$
@@ -49,10 +55,24 @@ help:
 	@echo "Commands :"
 	@grep -E '[a-zA-Z\.\-]+:.*?@ .*$$' $(MAKEFILE_LIST) | tr -d '#' | awk 'BEGIN {FS = ":.*?@ "}; {printf "\033[32m%-24s\033[0m - %s\n", $$1, $$2}'
 
-#deps: @ Verify required tools are installed (java, mvn)
+#deps: @ Verify required tools are installed (java, mvn) and provision mise-managed CLIs
 deps:
+	@# Auto-install mise-managed tools (hadolint, act, trivy, gitleaks,
+	@# actionlint, shellcheck, container-structure-test) when mise is
+	@# present locally. CI uses jdx/mise-action so this branch is local-only.
+	@if [ -z "$$CI" ] && command -v mise >/dev/null 2>&1; then \
+		mise install --yes; \
+	fi
 	@command -v java >/dev/null 2>&1 || { echo "Error: Java 25 required. Run: make deps-install"; exit 1; }
 	@command -v $(MVN) >/dev/null 2>&1 || { echo "Error: Maven required. Run: make deps-install"; exit 1; }
+
+#deps-docker: @ Verify Docker is installed (host requirement, not provisioned by mise)
+deps-docker:
+	@command -v docker >/dev/null 2>&1 || { echo "Error: Docker required."; exit 1; }
+
+#deps-node: @ Verify Node.js/npx is available (used by renovate-validate)
+deps-node:
+	@command -v npx >/dev/null 2>&1 || { echo "Error: Node.js/npx required for renovate-validate."; exit 1; }
 
 #deps-install: @ Install Java and Maven via mise (reads .mise.toml)
 deps-install:
@@ -126,20 +146,29 @@ lint: deps
 	@$(MVN) -B compile -Dmaven.compiler.failOnWarning=true -q
 
 #lint-docker: @ Lint the Dockerfile with hadolint (provisioned by mise)
-lint-docker:
+lint-docker: deps
 	@hadolint Dockerfile
 	@hadolint Dockerfile.maven-host-m2-cache
 
 #lint-ci: @ Lint GitHub Actions workflows with actionlint (provisioned by mise; uses shellcheck under the hood)
-lint-ci:
+lint-ci: deps
 	@actionlint .github/workflows/*.yml
 
+#lint-scripts-exec: @ Verify all shell scripts are committed with the executable bit set
+lint-scripts-exec:
+	@NONEXEC=$$(find scripts e2e -name '*.sh' -type f -not -executable 2>/dev/null); \
+	if [ -n "$$NONEXEC" ]; then \
+		echo "Error: shell scripts missing +x (run chmod +x and commit the mode change):"; \
+		echo "$$NONEXEC" | sed 's/^/  /'; \
+		exit 1; \
+	fi
+
 #trivy-fs: @ Scan filesystem for vulnerabilities, secrets, and misconfigurations (provisioned by mise)
-trivy-fs:
+trivy-fs: deps
 	@trivy fs --scanners vuln,secret,misconfig --severity CRITICAL,HIGH .
 
 #secrets: @ Scan working tree for hardcoded secrets with gitleaks (provisioned by mise)
-secrets:
+secrets: deps
 	@gitleaks detect --source . --no-git --verbose --redact
 
 #deps-prune: @ List declared but unused / undeclared but used Maven dependencies
@@ -160,8 +189,7 @@ cve-check: deps
 vulncheck: cve-check
 
 #mermaid-lint: @ Validate Mermaid diagrams in markdown files
-mermaid-lint:
-	@command -v docker >/dev/null 2>&1 || { echo "ERROR: docker is required for mermaid-lint"; exit 1; }
+mermaid-lint: deps-docker
 	@set -euo pipefail; \
 	IMG="minlag/mermaid-cli:$(MERMAID_CLI_VERSION)"; \
 	if ! docker image inspect "$$IMG" >/dev/null 2>&1; then \
@@ -204,7 +232,7 @@ mermaid-lint:
 #   * `cve-check` CI job — tag pushes + weekly schedule
 # Run `make cve-check` locally before tagging a release.
 #static-check: @ Run all quality and security checks (composite gate)
-static-check: format-check lint lint-docker lint-ci mermaid-lint trivy-fs secrets deps-prune-check
+static-check: format-check lint lint-docker lint-ci lint-scripts-exec mermaid-lint trivy-fs secrets deps-prune-check
 	@echo "Static check passed."
 
 #integration-test: @ Run integration tests (*IT.java via Failsafe)
@@ -216,11 +244,11 @@ e2e: build
 	@./e2e/smoke.sh
 
 #image-build: @ Build Docker image (multi-stage)
-image-build: build
+image-build: build deps-docker
 	@docker buildx build --load -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 #image-test: @ Validate image structure (USER, ENTRYPOINT, layout) via container-structure-test
-image-test: image-build
+image-test: image-build deps
 	@container-structure-test test \
 		--image $(DOCKER_IMAGE):$(DOCKER_TAG) \
 		--config container-structure-test.yaml
@@ -230,7 +258,7 @@ image-run: image-build image-stop
 	@docker run --rm -d -p 8080:8080 --name $(APP_NAME) $(DOCKER_IMAGE):$(DOCKER_TAG)
 
 #image-stop: @ Stop Docker container
-image-stop:
+image-stop: deps-docker
 	@docker stop $(APP_NAME) 2>/dev/null || true
 
 #image-push: @ Push Docker image to registry
@@ -238,25 +266,35 @@ image-push: image-build
 	@docker push $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)
 
 #ci: @ Full local CI pipeline
-ci: deps format-check lint test integration-test build
+ci: deps static-check test integration-test build
 	@echo "Local CI pipeline passed."
 
 #ci-run: @ Run GitHub Actions workflows locally via act (per-job, fail-fast; act provisioned by mise)
-ci-run:
+ci-run: deps deps-docker
 	@docker container prune -f 2>/dev/null || true
-	@ACT_PORT=$$(shuf -i 40000-59999 -n 1); \
+	@# act's synthetic push-event payload omits `repository.default_branch`,
+	@# which dorny/paths-filter falls back to when computing the diff base.
+	@# Generate a minimal payload via --eventpath; without this, the
+	@# `changes` job fails with "This action requires 'base' input or
+	@# 'repository.default_branch' to be set in the event payload".
+	@evt=$$(mktemp /tmp/act-push-event.XXXXXX.json); \
+	printf '{"ref":"refs/heads/main","repository":{"default_branch":"main","name":"$(APP_NAME)","full_name":"AndriyKalashnykov/$(APP_NAME)"}}' >"$$evt"; \
+	ACT_PORT=$$(shuf -i 40000-59999 -n 1); \
 	ARTIFACT_PATH=$$(mktemp -d -t act-artifacts.XXXXXX); \
+	rc=0; \
 	for job in static-check test integration-test build e2e; do \
 		echo "=== act --job $$job ==="; \
 		act push --container-architecture linux/amd64 \
 			--artifact-server-port "$$ACT_PORT" \
 			--artifact-server-path "$$ARTIFACT_PATH" \
-			--job "$$job" || exit $$?; \
-	done
+			--eventpath "$$evt" \
+			--job "$$job" || { rc=$$?; break; }; \
+	done; \
+	rm -f "$$evt"; \
+	exit $$rc
 
 #renovate-validate: @ Validate renovate.json configuration
-renovate-validate:
-	@command -v npx >/dev/null 2>&1 || { echo "Error: node/npx required for renovate validation"; exit 1; }
+renovate-validate: deps-node
 	@npx --yes --package renovate -- renovate-config-validator renovate.json
 
 #release: @ Create and push a new tag (interactive)
@@ -268,7 +306,7 @@ release:
 		git push origin $$newtag && \
 		echo "Done."'
 
-.PHONY: help deps deps-install deps-maven deps-check deps-prune deps-prune-check \
-	clean build test run format format-check lint lint-docker lint-ci mermaid-lint trivy-fs secrets \
+.PHONY: help deps deps-install deps-maven deps-check deps-docker deps-node deps-prune deps-prune-check \
+	clean build test run format format-check lint lint-docker lint-ci lint-scripts-exec mermaid-lint trivy-fs secrets \
 	cve-check vulncheck static-check integration-test e2e image-build image-test image-run image-stop image-push \
 	ci ci-run renovate-validate release

@@ -55,7 +55,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | File | Triggers | Purpose |
 |----------|------|----------|---------|
-| CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch, weekly schedule (`cve-check` only) | changes (paths-filter) → static-check → (test, integration-test, build) → (e2e, docker = scan + smoke + container-structure-test + tag-gated `linux/amd64` push + sign) + cve-check (tags + weekly) → ci-pass aggregator |
+| CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch, weekly schedule (`cve-check` only) | changes (paths-filter) → static-check → (test, integration-test, build) → (e2e, docker = scan + smoke + container-structure-test + tag-gated multi-arch `linux/amd64`+`linux/arm64` push + sign) + cve-check (tags + weekly) → ci-pass aggregator |
 | Cleanup old workflow runs | `cleanup-runs.yml` | weekly (Sunday) + manual + `workflow_call` | Delete old workflow runs and orphaned caches (preserves `main`, default branch, tags) |
 
 `NVD_API_KEY` is an optional secret used by the `cve-check` job (free key from NIST NVD; without it OWASP dependency-check still runs but throttled). The `docker` job uses `GITHUB_TOKEN` for GHCR auth and Sigstore OIDC for cosign signing. Image is published to `ghcr.io/andriykalashnykov/spring-boot-demo/app` (OCI refs are lowercase).
