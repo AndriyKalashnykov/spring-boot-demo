@@ -19,7 +19,7 @@ CURRENTTAG  := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 #   - MERMAID_CLI_VERSION: mermaid-cli runs as a Docker image, not a
 #     local CLI.
 # renovate: datasource=maven depName=org.apache.maven:apache-maven
-MAVEN_VER := 3.9.15
+MAVEN_VER := 3.9.16
 # renovate: datasource=github-releases depName=google/google-java-format extractVersion=^v(?<version>.*)$
 GJF_VERSION := 1.35.0
 # renovate: datasource=docker depName=minlag/mermaid-cli
