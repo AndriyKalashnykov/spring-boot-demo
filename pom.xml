@@ -138,6 +138,17 @@
 
         <plugins>
             <plugin>
+                <!-- Treat compiler warnings as errors for every `mvn` invocation
+                     (build, test, run, IDE), not only `make lint`. Version is
+                     managed by the Spring Boot parent. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <failOnWarning>true</failOnWarning>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>

@@ -28,7 +28,7 @@
       "description": "Update Makefile tool versions via inline renovate comments",
       "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n[A-Z_]+\\s*:=\\s*(?<currentValue>[^\\s]+)"
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[^\\s]+))?(?: registryUrl=(?<registryUrl>[^\\s]+))?\\n[A-Z_]+\\s*[?:]?=\\s*(?<currentValue>[^\\s]+)"
       ]
     },
     {
@@ -36,7 +36,7 @@
       "description": "Update .mise.toml bare-key tool pins via inline renovate comments. Aqua entries (\"aqua:owner/repo\") are deliberately NOT matched — Renovate's built-in `mise` manager extracts those natively, and matching here would create duplicate PRs per tool.",
       "managerFilePatterns": ["/^\\.mise\\.toml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n[a-zA-Z_-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[^\\s]+))?\\n[a-zA-Z_-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ]
     },
     {
@@ -44,7 +44,15 @@
       "description": "Update scripts/*.sh image pins via inline renovate comments (shell VAR=\"value\" assignments)",
       "managerFilePatterns": ["/^scripts/.+\\.sh$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)( extractVersion=(?<extractVersion>[^\\s]+))?( versioning=(?<versioning>[^\\s]+))?\\n[A-Z_]+=\"(?<currentValue>[^\"]+)\""
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[^\\s]+))?\\n[A-Z_]+=\"(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update the skaffold.yaml buildpacks builder image via inline renovate comment",
+      "managerFilePatterns": ["/^skaffold\\.yaml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[^\\s]+))?\\n\\s*builder:\\s*\"[^\"]+:(?<currentValue>[^\"]+)\""
       ]
     }
   ],
@@ -105,6 +113,19 @@
       "description": "Label Java packages",
       "matchCategories": ["java"],
       "addLabels": ["lang: java"]
+    },
+    {
+      "description": "Group the Maven distribution across mise (.mise.toml) and the Makefile MAVEN_VER pin so both bump in one PR (they share datasource=maven / depName=org.apache.maven:apache-maven and would otherwise collide in Renovate dedup)",
+      "matchManagers": ["mise", "custom.regex"],
+      "matchPackageNames": ["org.apache.maven:apache-maven"],
+      "groupName": "Maven"
+    },
+    {
+      "description": "Disable digest pinning for Makefile-tracked Docker tags — config:best-practices enables docker:pinDigests, which collides on the same renovate branch with the version bump for digest-less Makefile pins (e.g. MERMAID_CLI_VERSION)",
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": ["Makefile"],
+      "matchDatasources": ["docker"],
+      "pinDigests": false
     }
   ]
 }
