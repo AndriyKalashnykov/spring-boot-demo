@@ -151,6 +151,66 @@ class HotelControllerIT {
     assertTrue(body.containsKey("content"));
   }
 
+  // -- Bad-input contract: validation must yield 400, never 500. --
+  // Without @Valid + @NotBlank on Hotel.name, a null name propagated to the DB
+  // layer and surfaced as a 500. Without @Validated + @Min on the page/size
+  // params, PageRequest.of's IllegalArgumentException also became a 500.
+
+  @Test
+  void createWithNullNameReturns400() {
+    // Hand-built JSON: Map.of doesn't allow null values.
+    String body = "{\"name\":null,\"description\":\"d\",\"city\":\"c\",\"rating\":3}";
+    HttpHeaders headers = new HttpHeaders();
+    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    ResponseEntity<String> response =
+        restTemplate.exchange(
+            HOTELS_PATH, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+    assertEquals(
+        HttpStatus.BAD_REQUEST,
+        response.getStatusCode(),
+        "POST with null name must be rejected with 400, not propagate as 500");
+  }
+
+  @Test
+  void createWithBlankNameReturns400() {
+    String body = "{\"name\":\"   \",\"description\":\"d\",\"city\":\"c\",\"rating\":3}";
+    HttpHeaders headers = new HttpHeaders();
+    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    ResponseEntity<String> response =
+        restTemplate.exchange(
+            HOTELS_PATH, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+    assertEquals(
+        HttpStatus.BAD_REQUEST,
+        response.getStatusCode(),
+        "POST with whitespace-only name must be rejected with 400 (@NotBlank)");
+  }
+
+  @Test
+  void getHotelsNegativePageReturns400() {
+    ResponseEntity<String> response =
+        restTemplate.exchange(
+            HOTELS_PATH + "?page=-1&size=10", HttpMethod.GET, jsonRequest(null), String.class);
+    assertEquals(
+        HttpStatus.BAD_REQUEST,
+        response.getStatusCode(),
+        "GET hotels?page=-1 must be rejected with 400, not propagate as 500");
+  }
+
+  @Test
+  void getHotelsZeroSizeReturns400() {
+    ResponseEntity<String> response =
+        restTemplate.exchange(
+            HOTELS_PATH + "?page=0&size=0", HttpMethod.GET, jsonRequest(null), String.class);
+    assertEquals(
+        HttpStatus.BAD_REQUEST,
+        response.getStatusCode(),
+        "GET hotels?size=0 must be rejected with 400 (PageRequest requires size >= 1)");
+  }
+
   private URI create(Hotel payload) {
     ResponseEntity<Void> createResponse =
         restTemplate.exchange(HOTELS_PATH, HttpMethod.POST, jsonRequest(payload), Void.class);

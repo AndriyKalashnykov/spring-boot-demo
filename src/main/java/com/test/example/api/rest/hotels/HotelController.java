@@ -9,12 +9,15 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = "/example/v1/hotels")
 @Tag(name = "hotels")
+@Validated
 public class HotelController extends AbstractRestHandler {
 
   private static final Logger log = LoggerFactory.getLogger(HotelController.class);
@@ -44,7 +48,7 @@ public class HotelController extends AbstractRestHandler {
       summary = "Create a hotel resource.",
       description = "Returns the URL of the new resource in the Location header.")
   public void createHotel(
-      @RequestBody Hotel hotel, HttpServletRequest request, HttpServletResponse response) {
+      @Valid @RequestBody Hotel hotel, HttpServletRequest request, HttpServletResponse response) {
     Hotel createdHotel = this.hotelService.createHotel(hotel);
     response.setHeader(
         "Location", request.getRequestURL().append("/").append(createdHotel.getId()).toString());
@@ -64,9 +68,11 @@ public class HotelController extends AbstractRestHandler {
   public @ResponseBody Page<Hotel> getAllHotels(
       @Parameter(description = "The page number (zero-based)", required = true)
           @RequestParam(value = "page", required = true, defaultValue = DEFAULT_PAGE_NUM)
+          @Min(0)
           Integer page,
       @Parameter(description = "The page size", required = true)
           @RequestParam(value = "size", required = true, defaultValue = DEFAULT_PAGE_SIZE)
+          @Min(1)
           Integer size,
       HttpServletRequest request,
       HttpServletResponse response) {
@@ -106,7 +112,7 @@ public class HotelController extends AbstractRestHandler {
       @Parameter(description = "The ID of the existing hotel resource.", required = true)
           @PathVariable("id")
           Long id,
-      @RequestBody Hotel hotel,
+      @Valid @RequestBody Hotel hotel,
       HttpServletRequest request,
       HttpServletResponse response) {
     checkResourceFound(this.hotelService.getHotel(id));

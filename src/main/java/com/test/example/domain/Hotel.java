@@ -1,6 +1,7 @@
 package com.test.example.domain;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlRootElement;
@@ -14,6 +15,7 @@ public class Hotel implements Serializable {
 
   @Id @GeneratedValue() private long id;
 
+  @NotBlank
   @Column(nullable = false)
   private String name;
 
