@@ -181,9 +181,18 @@ deps-prune-check: deps
 
 #cve-check: @ Run OWASP dependency vulnerability scan (CVSS >= 7 blocks; matches the Trivy image scan threshold)
 cve-check: deps
-	@$(MVN) -B org.owasp:dependency-check-maven:check \
-		$$([ -n "$$NVD_API_KEY" ] && echo "-DnvdApiKey=$$NVD_API_KEY") \
-		-DfailBuildOnCVSS=7
+	@# NVD_API_KEY must never reach mvn's argv (visible via ps -ef / /proc/<pid>/cmdline).
+	@# Route it through a transient settings.xml (printf is a bash builtin — no argv leak;
+	@# umask 077 keeps the file 0600) referenced by -DnvdApiServerId; the temp file is
+	@# removed on any exit. Without a key, dependency-check still runs (throttled).
+	@if [ -n "$$NVD_API_KEY" ]; then \
+		SETTINGS="$$(mktemp)"; \
+		trap 'rm -f "$$SETTINGS"' EXIT; \
+		( umask 077 && printf '<settings><servers><server><id>nvd</id><password>%s</password></server></servers></settings>\n' "$$NVD_API_KEY" > "$$SETTINGS" ); \
+		$(MVN) -B -s "$$SETTINGS" org.owasp:dependency-check-maven:check -DnvdApiServerId=nvd -DfailBuildOnCVSS=7; \
+	else \
+		$(MVN) -B org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7; \
+	fi
 
 #vulncheck: @ Alias for cve-check
 vulncheck: cve-check

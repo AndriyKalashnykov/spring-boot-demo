@@ -16,7 +16,6 @@ concurrency:
 
 jobs:
   cleanup-runs:
-    name: Delete old workflow runs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -34,7 +33,6 @@ jobs:
           | xargs -r -I{} gh run delete {} --repo "${{ github.repository }}"
 
   cleanup-caches:
-    name: Delete caches whose source branch no longer exists
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:

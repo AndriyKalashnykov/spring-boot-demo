@@ -25,7 +25,8 @@ See `make help` for the full target list.
 ## Project Structure
 
 - `src/main/java/com/test/example/` -- Application source (Spring Boot REST)
-- `src/test/java/` -- Tests (MockMvc)
+- `src/main/fabric8/` -- Kubernetes manifests (`dc.yml` / `pod.yml` / `svc.yml`)
+- `src/test/java/` -- Tests: `.../test/` (MockMvc unit), `.../it/` (`*IT.java` Failsafe integration)
 - `pom.xml` -- Maven build config (Spring Boot 4.0.6, Java 25)
 - `Dockerfile` / `Dockerfile.maven-host-m2-cache` -- Multi-stage Docker builds
 - `container-structure-test.yaml` -- USER/ENTRYPOINT/layered-jar layout assertions (run via `make image-test`)
@@ -33,7 +34,7 @@ See `make help` for the full target list.
 - `scripts/` -- Docker image build scripts (multi-stage, Buildpacks, Kaniko, Spring Boot layered jar, m2-cache) + local run helpers
 - `LICENSE` -- MIT
 - `skaffold.yaml` -- Skaffold config (Paketo buildpacks)
-- `hotel.json` -- Sample API payload
+- `scripts/hotel.json` / `scripts/hotel.xml` -- Sample API payloads (JSON + XML)
 - `Makefile` -- Build orchestration
 - `.mise.toml` -- Pinned Java/Maven versions
 - `renovate.json` -- Dependency update configuration
@@ -69,7 +70,7 @@ Two pre-Spring-Boot-4 commits introduced secrets that were later removed from th
 | `bededf26e6cddae9d3baf6b56ecd989831dd233d:config.json:generic-api-key:1` | 2020-08-22 | `config.json` (removed) | generic-api-key |
 | `d0585218c825162913ba1c895a901143eeb32ff6:plain.cfg:private-key:19` | 2020-09-24 | `plain.cfg` (removed) | private-key |
 
-## Upgrade Backlog
+## Migration History
 
 ### Done — Spring Boot 4 migration (2026-04-22)
 
@@ -109,6 +110,15 @@ Resolved by the SB 2.3.9 → 4.0.5 migration:
 - Dependabot alert #21 verified fixed (along with 13 other historical alerts; 0 open now)
 - ci.yml aligned to `/ci-workflow` canon: `jdx/mise-action` + explicit Maven cache, `contains(needs.*.result, 'failure')` aggregator, `paths-ignore` trigger filter, `workflow_call` trigger, canonical step names on every `uses:` step
 - `renovate.json`: Apache commons grouping + `lang: java` label rule added; Jackson rule covers both `com.fasterxml.jackson` and `tools.jackson` namespaces; 7-day throttle on `java-version` datasource for mise-aqua race
+
+### Also resolved (2026-05-22 — project-review pass)
+
+- Tomcat `11.0.21` → `11.0.22` override — 6 newly-disclosed CVEs (CVE-2026-41293/43512/43515 CRITICAL, CVE-2026-41284/42498/43513 HIGH); rebuilt image scans 0 CRITICAL/HIGH
+- `cve-check` no longer passes the NVD key on the `mvn` command line — routed through a transient `settings.xml` + `-DnvdApiServerId` (no `ps`/`/proc` argv leak)
+- `pom.xml` `maven-compiler-plugin` now sets `failOnWarning` so every `mvn` build (not only `make lint`) treats compiler warnings as errors
+- `ci.yml`: tag pushes force `changes.code=true` (closes the empty-diff silent-no-op-release trap); heavy-job `if:` clauses gained the `!failure() && !cancelled()` guard; Maven cache keys gained a `runner.os` prefix
+- `renovate.json`: `skaffold.yaml` buildpacks builder now Renovate-tracked; Makefile customManager regex covers `?=` / `registryUrl`; Maven distribution grouped across `mise` + `Makefile`; `pinDigests` disabled for Makefile docker pins
+- `scripts/build-dockerimage-kaniko.sh`: docker-auth `config.json` written `0600` and removed on any exit
 
 ## Skills
 

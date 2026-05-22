@@ -6,7 +6,7 @@
 
 # Spring Boot Container Pipeline Reference
 
-A small Spring Boot REST microservice (hotel CRUD over an in-memory H2) used as a reference for four container image build paths — multi-stage Dockerfile with BuildKit (consuming Spring Boot's layered jar), Cloud Native Buildpacks via the `pack` CLI, Kaniko, and the Spring Boot Maven plugin's `build-image` goal (Paketo). Ships with a hardened GitHub Actions pipeline (Trivy image scan, boot-marker smoke test, multi-arch build, cosign keyless signing to GHCR) and a Skaffold-driven Kubernetes deployment flow. The application is deliberately minimal — the value is in the image, CI, and deployment harness around it.
+A deliberately minimal Spring Boot 4 REST microservice (hotel CRUD over in-memory H2) that serves as a **hardened container-pipeline reference** — the value is the build, test, and delivery harness around the app, not the app itself. **Build:** four image paths — multi-stage Dockerfile with BuildKit (consuming Spring Boot's layered jar), Cloud Native Buildpacks via the `pack` CLI, Kaniko, and the Spring Boot Maven plugin's `build-image` goal (Paketo). **Test:** a three-layer pyramid — Spring MockMvc unit tests, `*IT.java` Failsafe integration tests, and a packaged-JAR e2e smoke test. **Delivery:** a GitHub Actions pipeline with a `static-check` composite gate (`google-java-format`, Checkstyle, hadolint, actionlint, `gitleaks`, Mermaid lint, Trivy filesystem scan), a Trivy image scan, a boot-marker smoke test, `container-structure-test`, multi-arch build, and cosign keyless signing to GHCR — plus OWASP dependency-check, a mise-pinned toolchain, Renovate dependency automation, and a Skaffold-driven Kubernetes deploy.
 
 ```mermaid
 C4Context
@@ -19,7 +19,7 @@ C4Context
 
     Rel(client, sbd, "CRUD /example/v1/hotels", "HTTPS / JSON")
     Rel(prom, sbd, "Metrics scrape", "HTTP")
-    Rel(sbd, registry, "Image pulled from", "docker pull")
+    Rel(sbd, registry, "Published as a signed image to", "OCI / cosign-signed")
 ```
 
 The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). Published image: `ghcr.io/andriykalashnykov/spring-boot-demo/app:<semver>` (OCI references are lowercase). Authentication uses `GITHUB_TOKEN` — no separate registry credentials required.
@@ -40,7 +40,7 @@ The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). P
 
 ```bash
 make deps-install   # install Java 25 + Maven via mise (first run only)
-make test           # run unit tests
+make build          # compile and package the jar
 make run            # start the application on http://localhost:8080
 # Open http://localhost:8080/swagger-ui/index.html
 ```
@@ -52,7 +52,7 @@ make run            # start the application on http://localhost:8080
 | [GNU Make](https://www.gnu.org/software/make/) | 3.81+ | Build orchestration |
 | [Git](https://git-scm.com/) | 2.0+ | Source control |
 | [JDK](https://adoptium.net/) | 25 (Temurin LTS) | Java runtime and compiler |
-| [Maven](https://maven.apache.org/) | 3.9+ | Build and dependency management |
+| [Maven](https://maven.apache.org/) | 3.9.16 | Build and dependency management |
 | [Docker](https://www.docker.com/) | 20.10+ | Image build and local container runs |
 | [mise](https://mise.jdx.dev/) | latest | Java/Maven version management |
 | [curl](https://curl.se/) | any | HTTP client for smoke testing |
@@ -97,6 +97,7 @@ C4Container
 - **H2 Database** — in-memory JPA/Hibernate datastore; data is transient and resets on each application restart (intentional for the demo).
 - **Prometheus** — scrapes `/actuator/prometheus` over HTTP; no push gateway, no remote write.
 - **GHCR** — receives signed multi-arch images from GitHub Actions; consumers verify with `cosign verify` against the workflow's OIDC identity.
+- **GitHub Actions** — CI/CD: runs the three-layer test pyramid, builds and Trivy-scans the image, signs it with cosign, and publishes the multi-arch image to GHCR on tag pushes.
 
 ### Request flow
 
@@ -306,6 +307,7 @@ Run `make help` to see the full list.
 | `make trivy-fs` | Scan filesystem for CVEs, secrets, misconfigurations |
 | `make secrets` | Scan repo for leaked secrets with `gitleaks` |
 | `make cve-check` | OWASP dependency-check vulnerability scan |
+| `make vulncheck` | Alias for `make cve-check` |
 | `make deps-prune` | Show declared-but-unused / used-undeclared Maven dependencies |
 | `make deps-prune-check` | Fail on any used-undeclared or unused-declared dependency (manual; not in CI — Spring Boot starters create false positives) |
 | `make static-check` | Composite gate: format-check, lint, lint-docker, lint-ci, lint-scripts-exec, mermaid-lint, trivy-fs, secrets, deps-prune-check |
