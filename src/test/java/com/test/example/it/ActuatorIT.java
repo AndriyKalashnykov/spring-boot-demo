@@ -2,6 +2,7 @@ package com.test.example.it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -63,9 +64,21 @@ class ActuatorIT {
   }
 
   @Test
-  void infoEndpointResponds() {
+  @SuppressWarnings("unchecked")
+  void infoEndpointExposesBuildArtifact() {
+    // info.build.* in application.yml uses Maven resource-filtering tokens
+    // (@project.artifactId@); a regression that breaks filtering would leave
+    // the literal token in the response — assert the substituted value.
     ResponseEntity<Map> response = json("/actuator/info", Map.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    Map<String, Object> body = response.getBody();
+    assertNotNull(body);
+    Map<String, Object> build = (Map<String, Object>) body.get("build");
+    assertNotNull(build, "/actuator/info must expose 'build' (configured in application.yml)");
+    assertEquals(
+        "spring-boot-demo",
+        build.get("artifact"),
+        "info.build.artifact must resolve the @project.artifactId@ token");
   }
 
   @Test
@@ -75,14 +88,24 @@ class ActuatorIT {
   }
 
   @Test
-  void prometheusScrapeEndpointResponds() {
+  void prometheusScrapeReturnsExpositionFormat() {
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(java.util.List.of(MediaType.TEXT_PLAIN, MediaType.ALL));
     ResponseEntity<String> response =
         restTemplate.exchange(
             "/actuator/prometheus", HttpMethod.GET, new HttpEntity<>(headers), String.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNotNull(response.getBody());
+    String body = response.getBody();
+    assertNotNull(body);
+    // Prometheus exposition format always emits `# HELP` and `# TYPE` headers
+    // per metric. Asserting both catches a regression that swaps the format
+    // (e.g. accidentally returning JSON) while staying renderer-version-stable.
+    assertTrue(
+        body.contains("# HELP"),
+        "Prometheus scrape body must contain '# HELP' lines (exposition format)");
+    assertTrue(
+        body.contains("# TYPE"),
+        "Prometheus scrape body must contain '# TYPE' lines (exposition format)");
   }
 
   private <T> ResponseEntity<T> json(String path, Class<T> type) {

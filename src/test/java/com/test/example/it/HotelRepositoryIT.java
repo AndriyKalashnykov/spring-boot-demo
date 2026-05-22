@@ -3,6 +3,7 @@ package com.test.example.it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.test.example.dao.jpa.HotelRepository;
@@ -34,6 +35,15 @@ class HotelRepositoryIT {
     Hotel result = repository.findHotelByCity("byCity-city");
     assertNotNull(result);
     assertEquals("byCity-name", result.getName());
+  }
+
+  @Test
+  void findHotelByCityNoMatchReturnsNull() {
+    // Persist a hotel in a different city — proves the null return reflects
+    // "no match" rather than "empty table".
+    repository.save(newHotel("present"));
+    Hotel result = repository.findHotelByCity("no-such-city-" + System.nanoTime());
+    assertNull(result, "findHotelByCity must return null when no row matches");
   }
 
   @Test

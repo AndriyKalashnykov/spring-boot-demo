@@ -25,7 +25,6 @@ See `make help` for the full target list.
 ## Project Structure
 
 - `src/main/java/com/test/example/` -- Application source (Spring Boot REST)
-- `src/main/fabric8/` -- Kubernetes manifests (`dc.yml` / `pod.yml` / `svc.yml`)
 - `src/test/java/` -- Tests: `.../test/` (MockMvc unit), `.../it/` (`*IT.java` Failsafe integration)
 - `pom.xml` -- Maven build config (Spring Boot 4.0.6, Java 25)
 - `Dockerfile` / `Dockerfile.maven-host-m2-cache` -- Multi-stage Docker builds
@@ -119,6 +118,16 @@ Resolved by the SB 2.3.9 → 4.0.5 migration:
 - `ci.yml`: tag pushes force `changes.code=true` (closes the empty-diff silent-no-op-release trap); heavy-job `if:` clauses gained the `!failure() && !cancelled()` guard; Maven cache keys gained a `runner.os` prefix
 - `renovate.json`: `skaffold.yaml` buildpacks builder now Renovate-tracked; Makefile customManager regex covers `?=` / `registryUrl`; Maven distribution grouped across `mise` + `Makefile`; `pinDigests` disabled for Makefile docker pins
 - `scripts/build-dockerimage-kaniko.sh`: docker-auth `config.json` written `0600` and removed on any exit
+
+### Also resolved (2026-05-22 — project-review follow-up)
+
+- Removed dead `src/main/fabric8/` manifests — orphaned pre-Spring-Boot-4 fabric8-maven-plugin scaffolding (no plugin generated or consumed them; never-filtered `${project.*}` placeholders, JDK 8/9 JVM flags, non-existent image ref, probes pointing at `/health:8081` on an app that serves `/actuator/health:8080`).
+- Bean Validation on the REST surface: `@NotBlank` on `Hotel.name`, `@Valid` on POST/PUT request bodies, `@Validated` on `HotelController` plus `@Min(0)` / `@Min(1)` on `page` / `size`. Bad client input now returns **400** instead of **500** (POST with null/blank name, GET `?page=-1`, GET `?size=0`).
+- `AbstractRestHandler`: new `@ExceptionHandler` mappings for `ConstraintViolationException` and `IllegalArgumentException` → 400. Spring's default resolver does not auto-map either; the violation / IAE previously propagated as 500.
+- `pom.xml`: added the `spring-boot-maven-plugin` `build-info` goal execution so `/actuator/info` exposes `build.artifact/version/group` via the default-enabled `BuildInfoContributor`. Since Spring Boot 2.6+, `EnvironmentInfoContributor` (the path the existing `info.build.*` config relied on) is opt-in via `management.info.env.enabled`.
+- `skaffold.yaml`: migrated `apiVersion: skaffold/v2beta8` → `skaffold/v4beta13` via `skaffold fix` (skaffold v2.17.1); manually restored the Renovate `# renovate:` annotation that `skaffold fix` stripped.
+- Test coverage: added `HotelControllerIT.createWithNullNameReturns400` + `createWithBlankNameReturns400` + `getHotelsNegativePageReturns400` + `getHotelsZeroSizeReturns400`, `HotelRepositoryIT.findHotelByCityNoMatchReturnsNull`; deepened `ActuatorIT.infoEndpointExposesBuildArtifact` (asserts `build.artifact = "spring-boot-demo"`) and `ActuatorIT.prometheusScrapeReturnsExpositionFormat` (asserts `# HELP` + `# TYPE`).
+- Confirmed not actionable: the Mermaid C4 "add a legend" LOW finding — Mermaid's C4 implementation has no legend directive (`[ ] Legend` is explicitly listed as an unimplemented feature in the official Mermaid docs). Resolving would require migrating diagrams from Mermaid C4 to C4-PlantUML, far beyond a LOW.
 
 ## Skills
 

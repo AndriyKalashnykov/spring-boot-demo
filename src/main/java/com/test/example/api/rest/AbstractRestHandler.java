@@ -4,6 +4,7 @@ import com.test.example.domain.RestErrorInfo;
 import com.test.example.exception.DataFormatException;
 import com.test.example.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -43,6 +44,36 @@ public abstract class AbstractRestHandler implements ApplicationEventPublisherAw
     log.info("ResourceNotFoundException handler: " + ex.getMessage());
 
     return new RestErrorInfo(ex, "handleResourceNotFoundException");
+  }
+
+  /**
+   * Maps Bean Validation method-parameter violations to 400. Triggered by {@code @Validated} on the
+   * controller class plus {@code @Min}/{@code @Max}/etc on {@code @RequestParam} or
+   * {@code @PathVariable} arguments. Spring's {@code DefaultHandlerExceptionResolver} does not map
+   * {@link ConstraintViolationException} on its own — without this handler the violation propagates
+   * as a 500.
+   */
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(ConstraintViolationException.class)
+  public @ResponseBody RestErrorInfo handleConstraintViolation(
+      ConstraintViolationException ex, WebRequest request, HttpServletResponse response) {
+    log.info("ConstraintViolationException handler: " + ex.getMessage());
+
+    return new RestErrorInfo(ex, "handleConstraintViolation");
+  }
+
+  /**
+   * Defense-in-depth for bad-input {@link IllegalArgumentException}s that aren't caught upstream by
+   * {@code @Validated}. {@code PageRequest.of} throws IAE on negative page or zero/negative size;
+   * at the controller boundary IAE is a client-side bug, not a server error.
+   */
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(IllegalArgumentException.class)
+  public @ResponseBody RestErrorInfo handleIllegalArgument(
+      IllegalArgumentException ex, WebRequest request, HttpServletResponse response) {
+    log.info("IllegalArgumentException handler: " + ex.getMessage());
+
+    return new RestErrorInfo(ex, "handleIllegalArgument");
   }
 
   @Override

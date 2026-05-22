@@ -151,6 +151,19 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <!-- Writes META-INF/build-info.properties (artifact/group/name/version/time)
+                         that BuildInfoContributor exposes on /actuator/info.build.*. Without this
+                         goal, EnvironmentInfoContributor would be the only path — and it has been
+                         disabled-by-default since Spring Boot 2.6 (management.info.env.enabled).
+                         The Paketo image-labels buildpack also reads this file when present. -->
+                    <execution>
+                        <id>build-info</id>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <addResources>false</addResources>
                     <layers>

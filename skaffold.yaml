@@ -1,7 +1,7 @@
 # https://github.com/GoogleContainerTools/skaffold/tree/master/examples
 # https://github.com/GoogleContainerTools/skaffold/blob/master/examples/buildpacks-java/skaffold.yaml
 
-apiVersion: skaffold/v2beta8
+apiVersion: skaffold/v4beta13
 kind: Config
 build:
   artifacts:
@@ -9,11 +9,6 @@ build:
       buildpacks:
         # renovate: datasource=docker depName=paketobuildpacks/builder-jammy-base
         builder: "paketobuildpacks/builder-jammy-base:0.4.576"
-
-#        builder: "gcr.io/buildpacks/builder:v1"
-#        env:
-#          - GOOGLE_RUNTIME_VERSION=8
-
 profiles:
   - name: gcb
     build:
