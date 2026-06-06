@@ -33,14 +33,6 @@
     },
     {
       "customType": "regex",
-      "description": "Update .mise.toml bare-key tool pins via inline renovate comments. Aqua entries (\"aqua:owner/repo\") are deliberately NOT matched — Renovate's built-in `mise` manager extracts those natively, and matching here would create duplicate PRs per tool.",
-      "managerFilePatterns": ["/^\\.mise\\.toml$/"],
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[^\\s]+))?\\n[a-zA-Z_-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
-      ]
-    },
-    {
-      "customType": "regex",
       "description": "Update scripts/*.sh image pins via inline renovate comments (shell VAR=\"value\" assignments)",
       "managerFilePatterns": ["/^scripts/.+\\.sh$/"],
       "matchStrings": [
@@ -73,9 +65,9 @@
       "groupName": "GitHub Actions"
     },
     {
-      "description": "Delay Temurin java-version bumps for 7 days so mise's aqua backend indexes the new patch before Renovate proposes it (Adoptium announces same-day; aqua re-scrapes with a few-day lag)",
+      "description": "Delay Temurin java-version bumps for 7 days so mise's aqua backend indexes the new patch before Renovate proposes it (Adoptium announces same-day; aqua re-scrapes with a few-day lag). The native `mise` manager surfaces the .mise.toml java pin as packageName `java-jdk`; `java` is retained for forward-compat.",
       "matchDatasources": ["java-version"],
-      "matchPackageNames": ["java"],
+      "matchPackageNames": ["java", "java-jdk"],
       "minimumReleaseAge": "7 days"
     },
     {
@@ -115,9 +107,9 @@
       "addLabels": ["lang: java"]
     },
     {
-      "description": "Group the Maven distribution across mise (.mise.toml) and the Makefile MAVEN_VER pin so both bump in one PR (they share datasource=maven / depName=org.apache.maven:apache-maven and would otherwise collide in Renovate dedup)",
+      "description": "Group the Maven distribution across the native mise manager (.mise.toml, packageName apache/maven via github-releases) and the Makefile MAVEN_VER custom.regex pin (packageName org.apache.maven:apache-maven via maven) so both bump in one PR. The two sides use different datasources, so both packageNames must be listed explicitly.",
       "matchManagers": ["mise", "custom.regex"],
-      "matchPackageNames": ["org.apache.maven:apache-maven"],
+      "matchPackageNames": ["org.apache.maven:apache-maven", "apache/maven"],
       "groupName": "Maven"
     },
     {
