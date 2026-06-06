@@ -35,10 +35,22 @@ export PATH := $(HOME)/.local/share/mise/shims:$(HOME)/.local/bin:$(PATH)
 MVN := mvn
 
 # Docker image config
+# DOCKER_REGISTRY is `:=` (not `?=`) so an ambient exported env var cannot
+# silently redirect `make image-push` to the wrong registry; a deliberate
+# `make DOCKER_REGISTRY=docker.io image-push` CLI override still works.
+# DOCKER_REPO is the GHCR owner/repo namespace (OCI refs are lowercase). Note
+# CI publishes+signs the `.../spring-boot-demo/app` package (extra `/app`
+# segment, set in ci.yml's docker metadata `images:`); this local push target
+# uses the shorter owner/repo form.
 DOCKER_IMAGE    := $(APP_NAME)
-DOCKER_REGISTRY ?= docker.io
-DOCKER_REPO     ?= $(APP_NAME)
+DOCKER_REGISTRY := ghcr.io
+DOCKER_REPO     ?= andriykalashnykov/spring-boot-demo
 DOCKER_TAG      ?= $(APP_VERSION)
+
+# Local image-run port mapping (host:container). Tunable via env; defaults
+# mirror the app's bind port (8080).
+HOST_PORT          ?= 8080
+APP_INTERNAL_PORT  ?= 8080
 
 # google-java-format JAR (cached once)
 GJF_JAR := $(HOME)/.cache/google-java-format/google-java-format-$(GJF_VERSION)-all-deps.jar
@@ -117,7 +129,7 @@ test: deps
 
 #run: @ Start the application locally
 run: deps
-	@$(MVN) -B spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=default" -DskipTests
+	@$(MVN) -B org.springframework.boot:spring-boot-maven-plugin:run -Dspring-boot.run.arguments="--spring.profiles.active=default" -DskipTests
 
 #format: @ Auto-format Java source code (Google style)
 format: $(GJF_JAR)
@@ -142,7 +154,7 @@ format-check: $(GJF_JAR)
 #lint: @ Compiler warnings-as-errors + Checkstyle (google_checks.xml, severity=error)
 lint: deps
 	@$(MVN) -B validate
-	@$(MVN) -B checkstyle:check
+	@$(MVN) -B org.apache.maven.plugins:maven-checkstyle-plugin:check
 	@$(MVN) -B compile -Dmaven.compiler.failOnWarning=true -q
 
 #lint-docker: @ Lint the Dockerfile with hadolint (provisioned by mise)
@@ -173,26 +185,41 @@ secrets: deps
 
 #deps-prune: @ List declared but unused / undeclared but used Maven dependencies
 deps-prune: deps
-	@$(MVN) -B dependency:analyze
+	@$(MVN) -B org.apache.maven.plugins:maven-dependency-plugin:analyze
 
 #deps-prune-check: @ Fail the build on any used-undeclared or unused-declared Maven dependency
 deps-prune-check: deps
-	@$(MVN) -B dependency:analyze -DfailOnWarning=true
+	@$(MVN) -B org.apache.maven.plugins:maven-dependency-plugin:analyze -DfailOnWarning=true
 
 #cve-check: @ Run OWASP dependency vulnerability scan (CVSS >= 7 blocks; matches the Trivy image scan threshold)
 cve-check: deps
-	@# NVD_API_KEY must never reach mvn's argv (visible via ps -ef / /proc/<pid>/cmdline).
-	@# Route it through a transient settings.xml (printf is a bash builtin — no argv leak;
-	@# umask 077 keeps the file 0600) referenced by -DnvdApiServerId; the temp file is
-	@# removed on any exit. Without a key, dependency-check still runs (throttled).
-	@if [ -n "$$NVD_API_KEY" ]; then \
-		SETTINGS="$$(mktemp)"; \
-		trap 'rm -f "$$SETTINGS"' EXIT; \
-		( umask 077 && printf '<settings><servers><server><id>nvd</id><password>%s</password></server></servers></settings>\n' "$$NVD_API_KEY" > "$$SETTINGS" ); \
-		$(MVN) -B -s "$$SETTINGS" org.owasp:dependency-check-maven:check -DnvdApiServerId=nvd -DfailBuildOnCVSS=7; \
-	else \
-		$(MVN) -B org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7; \
-	fi
+	@# Secrets (NVD_API_KEY, OSS_INDEX_TOKEN) must never reach mvn's argv
+	@# (visible via ps -ef / /proc/<pid>/cmdline). Route them through a
+	@# transient settings.xml (printf is a bash builtin — no argv leak;
+	@# umask 077 keeps the file 0600) referenced by -DnvdApiServerId /
+	@# -DossIndexServerId; the temp file is removed on any exit.
+	@#
+	@# OWASP dependency-check runs TWO independent vuln sources: NVD and
+	@# Sonatype OSS Index. OSS Index now mandates token auth — without
+	@# OSS_INDEX_USER + OSS_INDEX_TOKEN it is SILENTLY disabled (warning
+	@# only, exit 0) and CVE coverage is reduced. Free token:
+	@# https://ossindex.sonatype.org/. Without either credential the scan
+	@# still runs (NVD throttled, OSS Index off).
+	@set -euo pipefail; \
+	SETTINGS="$$(mktemp)"; \
+	trap 'rm -f "$$SETTINGS"' EXIT; \
+	SERVERS=""; \
+	FLAGS="-DfailBuildOnCVSS=7"; \
+	if [ -n "$${NVD_API_KEY:-}" ]; then \
+		SERVERS="$$SERVERS<server><id>nvd</id><password>$$NVD_API_KEY</password></server>"; \
+		FLAGS="$$FLAGS -DnvdApiServerId=nvd"; \
+	fi; \
+	if [ -n "$${OSS_INDEX_USER:-}" ] && [ -n "$${OSS_INDEX_TOKEN:-}" ]; then \
+		SERVERS="$$SERVERS<server><id>ossindex</id><username>$$OSS_INDEX_USER</username><password>$$OSS_INDEX_TOKEN</password></server>"; \
+		FLAGS="$$FLAGS -DossIndexServerId=ossindex"; \
+	fi; \
+	( umask 077 && printf '<settings><servers>%s</servers></settings>\n' "$$SERVERS" > "$$SETTINGS" ); \
+	$(MVN) -B -s "$$SETTINGS" org.owasp:dependency-check-maven:check $$FLAGS
 
 #vulncheck: @ Alias for cve-check
 vulncheck: cve-check
@@ -240,8 +267,25 @@ mermaid-lint: deps-docker
 #   * Trivy image scan (CRITICAL/HIGH) in the docker job — every push
 #   * `cve-check` CI job — tag pushes + weekly schedule
 # Run `make cve-check` locally before tagging a release.
+#check-maven-alignment: @ Verify the Maven version is identical across .mise.toml, Makefile, and both Dockerfiles
+check-maven-alignment:
+	@set -euo pipefail; \
+	mise_ver=$$(sed -n 's/^maven = "\(.*\)"/\1/p' .mise.toml); \
+	df_ver=$$(sed -n 's/^ARG MAVEN_IMAGE_VERSION=\([0-9.]*\)-.*/\1/p' Dockerfile); \
+	dfm_ver=$$(sed -n 's/^ARG MAVEN_IMAGE_VERSION=\([0-9.]*\)-.*/\1/p' Dockerfile.maven-host-m2-cache); \
+	fail=0; \
+	for pair in ".mise.toml=$$mise_ver" "Dockerfile=$$df_ver" "Dockerfile.maven-host-m2-cache=$$dfm_ver"; do \
+		f=$${pair%%=*}; v=$${pair#*=}; \
+		if [ "$$v" != "$(MAVEN_VER)" ]; then \
+			echo "Maven version drift: $$f has '$$v' but Makefile MAVEN_VER is '$(MAVEN_VER)'"; \
+			fail=1; \
+		fi; \
+	done; \
+	if [ "$$fail" -ne 0 ]; then exit 1; fi; \
+	echo "Maven version aligned ($(MAVEN_VER)) across .mise.toml, Makefile, and both Dockerfiles."
+
 #static-check: @ Run all quality and security checks (composite gate)
-static-check: format-check lint lint-docker lint-ci lint-scripts-exec mermaid-lint trivy-fs secrets deps-prune-check
+static-check: check-maven-alignment format-check lint lint-docker lint-ci lint-scripts-exec mermaid-lint trivy-fs secrets deps-prune-check
 	@echo "Static check passed."
 
 #integration-test: @ Run integration tests (*IT.java via Failsafe)
@@ -264,7 +308,7 @@ image-test: image-build deps
 
 #image-run: @ Run Docker container
 image-run: image-build image-stop
-	@docker run --rm -d -p 8080:8080 --name $(APP_NAME) $(DOCKER_IMAGE):$(DOCKER_TAG)
+	@docker run --rm -d -p $(HOST_PORT):$(APP_INTERNAL_PORT) --name $(APP_NAME) $(DOCKER_IMAGE):$(DOCKER_TAG)
 
 #image-stop: @ Stop Docker container
 image-stop: deps-docker
@@ -280,6 +324,11 @@ ci: deps static-check test integration-test build
 
 #ci-run: @ Run GitHub Actions workflows locally via act (per-job, fail-fast; act provisioned by mise)
 ci-run: deps deps-docker
+	@# The loop below runs static-check/test/integration-test/build/e2e.
+	@# `docker` and `cve-check` are intentionally omitted: `docker` needs
+	@# multi-arch buildx + QEMU + GHCR push (heavy DinD, not meaningful under
+	@# act — validate locally via `make image-test` / `make image-build`);
+	@# `cve-check` runs the slow OWASP NVD download (tag/scheduled only).
 	@docker container prune -f 2>/dev/null || true
 	@# act's synthetic push-event payload omits `repository.default_branch`,
 	@# which dorny/paths-filter falls back to when computing the diff base.
@@ -317,5 +366,6 @@ release:
 
 .PHONY: help deps deps-install deps-maven deps-check deps-docker deps-node deps-prune deps-prune-check \
 	clean build test run format format-check lint lint-docker lint-ci lint-scripts-exec mermaid-lint trivy-fs secrets \
+	check-maven-alignment \
 	cve-check vulncheck static-check integration-test e2e image-build image-test image-run image-stop image-push \
 	ci ci-run renovate-validate release

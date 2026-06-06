@@ -94,6 +94,55 @@ class ErrorEnvelopeIT {
     assertNotNull(body.get("message"), "message must be present");
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  void constraintViolationReturnsRestErrorInfoEnvelope() {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+    // size=0 violates @Min(1) on the size param (method-level @Validated) →
+    // ConstraintViolationException → handleConstraintViolation → 400. The
+    // existing HotelControllerIT asserts the status only; this pins the body.
+    ResponseEntity<Map> response =
+        restTemplate.exchange(
+            HOTELS_PATH + "?page=0&size=0", HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    Map<String, Object> body = response.getBody();
+    assertNotNull(body, "400 response must have a body");
+    assertEquals(
+        "handleConstraintViolation",
+        body.get("detail"),
+        "detail must identify the ConstraintViolationException handler");
+    assertNotNull(body.get("message"), "message must be present");
+  }
+
+  @Test
+  void notFoundReturnsXmlRestErrorInfoEnvelope() {
+    // RestErrorInfo is @XmlRootElement-annotated; the error envelope must honor
+    // an XML Accept header just like the success responses do.
+    HttpHeaders headers = new HttpHeaders();
+    headers.setAccept(List.of(MediaType.APPLICATION_XML));
+
+    ResponseEntity<String> response =
+        restTemplate.exchange(
+            HOTELS_PATH + "/" + Long.MAX_VALUE,
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            String.class);
+
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertTrue(
+        response.getHeaders().getContentType().includes(MediaType.APPLICATION_XML),
+        "error response must honor the XML Accept header");
+    String body = response.getBody();
+    assertNotNull(body, "404 XML response must have a body");
+    assertTrue(
+        body.contains("handleResourceNotFoundException"),
+        "XML envelope must carry the handler detail");
+    assertTrue(body.contains("<detail"), "XML envelope must serialise the <detail> element");
+  }
+
   private URI createHotel(String prefix) {
     Hotel h = new Hotel();
     h.setName(prefix + "-name");

@@ -114,6 +114,12 @@ if [[ -n "${LOCATION}" ]]; then
   ID="${LOCATION##*/}"
   assert_status        GET    "${BASE}/example/v1/hotels/${ID}" 200
   assert_body_contains "${BASE}/example/v1/hotels/${ID}"        'E2E Hotel'
+  # PUT update — body id MUST match the path id; a mismatch returns 400 via
+  # DataFormatException. Exercises the update path against the real server
+  # (integration covers it in-process, but not through the packaged JAR).
+  UPDATED_PAYLOAD="{\"id\":${ID},\"name\":\"E2E Hotel Updated\",\"description\":\"smoke test\",\"city\":\"Tucson\",\"rating\":5}"
+  assert_status        PUT    "${BASE}/example/v1/hotels/${ID}" 204 "${UPDATED_PAYLOAD}"
+  assert_body_contains "${BASE}/example/v1/hotels/${ID}"        'E2E Hotel Updated'
   assert_status        DELETE "${BASE}/example/v1/hotels/${ID}" 204
   assert_status        GET    "${BASE}/example/v1/hotels/${ID}" 404
 else
@@ -126,6 +132,33 @@ assert_status GET "${BASE}/example/v1/hotels?page=0&size=10" 200
 
 # Negative case (numeric path bound to Long; use a high ID that won't exist)
 assert_status GET "${BASE}/example/v1/hotels/9999999" 404
+
+# XML content negotiation round-trip. json+xml is a real produces/consumes
+# contract on every Hotel endpoint (Spring Boot 4 swapped XStream for Jackson
+# XML); integration covers it in-process, this proves it through the packaged
+# JAR. Root element is <hotel> per @XmlRootElement(name = "hotel").
+XML_PAYLOAD='<hotel><name>E2E XML Hotel</name><description>xml smoke</description><city>Mesa</city><rating>4</rating></hotel>'
+XML_LOCATION=$(curl -sfi -X POST "${BASE}/example/v1/hotels" \
+  -H 'Content-Type: application/xml' \
+  -H 'Accept: application/xml' \
+  -d "${XML_PAYLOAD}" | tr -d '\r' | grep -i '^Location:' | awk '{print $2}' || true)
+
+if [[ -n "${XML_LOCATION}" ]]; then
+  echo "PASS: POST (xml) /example/v1/hotels -> 201 Location=${XML_LOCATION}"
+  PASS=$((PASS + 1))
+  XML_BODY=$(curl -sf -H 'Accept: application/xml' "${XML_LOCATION}" || true)
+  if echo "${XML_BODY}" | grep -q '<name>E2E XML Hotel</name>'; then
+    echo "PASS: GET (xml) ${XML_LOCATION} contains <name>E2E XML Hotel</name>"
+    PASS=$((PASS + 1))
+  else
+    echo "FAIL: GET (xml) ${XML_LOCATION} missing <name> element (body: ${XML_BODY:0:200})"
+    FAIL=$((FAIL + 1))
+  fi
+  curl -sf -o /dev/null -X DELETE "${XML_LOCATION}" || true
+else
+  echo "FAIL: POST (xml) /example/v1/hotels did not return a Location header"
+  FAIL=$((FAIL + 1))
+fi
 
 # Build/commit metadata endpoint
 assert_status GET "${BASE}/commitid" 200

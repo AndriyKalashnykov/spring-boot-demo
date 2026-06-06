@@ -225,7 +225,12 @@ jobs:
   # ---------------------------------------------------------------------
   # OWASP dependency-check. Runs on tag pushes, weekly schedule, and
   # manual dispatch — too slow for every push (NVD download dominates).
-  # NVD database cached keyed on pom.xml.
+  # The NVD database is independent of project deps, so it is cached keyed
+  # on the ISO week (not pom.xml — a pom bump would needlessly evict the DB
+  # → cold ~30-min refetch that then throttles under anonymous limits).
+  # Two vuln sources run: NVD (NVD_API_KEY) and Sonatype OSS Index
+  # (OSS_INDEX_USER + OSS_INDEX_TOKEN — OSS Index is silently disabled
+  # without them; see the Makefile cve-check recipe).
   # ---------------------------------------------------------------------
   cve-check:
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -248,16 +253,22 @@ jobs:
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-${{ runner.os }}-
 
+      - name: Compute NVD cache week
+        id: nvdweek
+        run: echo "week=$(date -u +%Y-%V)" >> "$GITHUB_OUTPUT"
+
       - name: Cache NVD database
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: nvd-${{ hashFiles('**/pom.xml') }}
+          key: nvd-${{ steps.nvdweek.outputs.week }}
           restore-keys: nvd-
 
       - name: CVE check
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          OSS_INDEX_USER: ${{ secrets.OSS_INDEX_USER }}
+          OSS_INDEX_TOKEN: ${{ secrets.OSS_INDEX_TOKEN }}
         run: make cve-check
 
   # ---------------------------------------------------------------------
@@ -430,6 +441,10 @@ jobs:
         run: |
           if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
             echo "One or more jobs failed"
+            exit 1
+          fi
+          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more jobs were cancelled"
             exit 1
           fi
           echo "All required jobs passed or were skipped."

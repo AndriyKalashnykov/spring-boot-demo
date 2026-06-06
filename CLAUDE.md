@@ -37,6 +37,7 @@ See `make help` for the full target list.
 - `Makefile` -- Build orchestration
 - `.mise.toml` -- Pinned Java/Maven versions
 - `renovate.json` -- Dependency update configuration
+- `img/` -- README image assets (IntelliJ remote-run screenshot)
 
 ## Key Details
 
@@ -58,7 +59,11 @@ GitHub Actions workflows in `.github/workflows/`:
 | CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch, weekly schedule (`cve-check` only) | changes (paths-filter) → static-check → (test, integration-test, build) → (e2e, docker = scan + smoke + container-structure-test + tag-gated multi-arch `linux/amd64`+`linux/arm64` push + sign) + cve-check (tags + weekly) → ci-pass aggregator |
 | Cleanup old workflow runs | `cleanup-runs.yml` | weekly (Sunday) + manual + `workflow_call` | Delete old workflow runs and orphaned caches (preserves `main`, default branch, tags) |
 
-`NVD_API_KEY` is an optional secret used by the `cve-check` job (free key from NIST NVD; without it OWASP dependency-check still runs but throttled). The `docker` job uses `GITHUB_TOKEN` for GHCR auth and Sigstore OIDC for cosign signing. Image is published to `ghcr.io/andriykalashnykov/spring-boot-demo/app` (OCI refs are lowercase).
+The `cve-check` job runs OWASP dependency-check against two independent vuln sources, each gated on optional secrets:
+- `NVD_API_KEY` (free key from NIST NVD; without it the NVD analyzer still runs but throttled).
+- `OSS_INDEX_USER` + `OSS_INDEX_TOKEN` (free token from https://ossindex.sonatype.org/) — the Sonatype OSS Index analyzer now mandates token auth and is **silently disabled** (warning only, exit 0) without them, so a green `cve-check` without these runs at reduced coverage. Both tokens are routed through a transient `0600` `settings.xml` (never on mvn's argv) referenced by `-DnvdApiServerId`/`-DossIndexServerId`.
+
+The `docker` job uses `GITHUB_TOKEN` for GHCR auth and Sigstore OIDC for cosign signing. Image is published to `ghcr.io/andriykalashnykov/spring-boot-demo/app` (OCI refs are lowercase).
 
 ### Historical secret leaks (rotated; informational)
 
