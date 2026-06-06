@@ -49,4 +49,25 @@ class CommitInfoIT {
     assertTrue(first.containsKey("branch"), "commit object must have 'branch' field");
     assertTrue(first.containsKey("time"), "commit object must have 'time' field");
   }
+
+  @Test
+  void getCommitIdReturnsXml() {
+    // /commitid declares produces = {application/json, application/xml}; this
+    // exercises the XML representation, which the JSON test above does not.
+    HttpHeaders headers = new HttpHeaders();
+    headers.setAccept(List.of(MediaType.APPLICATION_XML));
+    ResponseEntity<String> response =
+        restTemplate.exchange("/commitid", HttpMethod.GET, new HttpEntity<>(headers), String.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(
+        response.getHeaders().getContentType().includes(MediaType.APPLICATION_XML),
+        "response must honor the XML Accept header");
+    String body = response.getBody();
+    assertNotNull(body, "XML body must be present");
+    // Commit fields default to "" when git.properties is absent, so the element
+    // tags are present regardless of whether .git metadata was packaged.
+    assertTrue(body.contains("<id"), "XML must include the serialised <id> element");
+    assertTrue(body.contains("<branch"), "XML must include the serialised <branch> element");
+  }
 }
