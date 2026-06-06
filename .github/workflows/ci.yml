@@ -273,14 +273,20 @@ jobs:
 
   # ---------------------------------------------------------------------
   # Tag-gated publish pipeline: pre-push hardening (gates 1-4) followed
-  # by multi-arch (linux/amd64,linux/arm64) push + cosign keyless signing.
+  # by linux/amd64 push + cosign keyless signing.
   #   Gate 1: single-arch (amd64) build with load: true for scanning/smoke
   #   Gate 2: Trivy CRITICAL/HIGH blocking (vuln/secret/misconfig)
   #   Gate 3: Spring Boot boot-marker smoke test (no external deps)
   #   Gate 4: container-structure-test (USER, ENTRYPOINT, layout)
-  # On non-tag runs the docker job builds multi-arch (validating arm64
-  # cross-compile + the full pipeline) but skips publish/sign — release-
-  # day regressions are caught on every push, not only on tags.
+  # On non-tag runs the docker job builds amd64 (the full pipeline) but
+  # skips publish/sign — release-day regressions are caught on every push,
+  # not only on tags.
+  # NOTE: linux/arm64 is temporarily disabled to speed up the docker job
+  # (arm64 cross-compiles under QEMU emulation, the multi-minute long pole).
+  # Re-enable by adding `,linux/arm64` back to the `Build and push` step's
+  # `platforms:` line below (the Gate-1 scan build stays amd64-only — `load:
+  # true` cannot load a multi-arch manifest); the QEMU setup step is retained
+  # so that stays a one-line change.
   # ---------------------------------------------------------------------
   docker:
     needs: [changes, build, test, integration-test]
@@ -383,7 +389,7 @@ jobs:
             --image spring-boot-demo:0.0.1 \
             --config container-structure-test.yaml
 
-      # All gates passed → publish multi-arch on tag pushes only.
+      # All gates passed → publish amd64 on tag pushes only.
       - name: Log in to GHCR
         if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
@@ -398,7 +404,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: ${{ startsWith(github.ref, 'refs/tags/v') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

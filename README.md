@@ -6,7 +6,7 @@
 
 # Spring Boot Container Pipeline Reference
 
-A deliberately minimal Spring Boot 4 REST microservice (hotel CRUD over in-memory H2) that serves as a **hardened container-pipeline reference** — the value is the build, test, and delivery harness around the app, not the app itself. **Build:** four image paths — multi-stage Dockerfile with BuildKit (consuming Spring Boot's layered jar), Cloud Native Buildpacks via the `pack` CLI, Kaniko, and the Spring Boot Maven plugin's `build-image` goal (Paketo). **Test:** a three-layer pyramid — Spring MockMvc unit tests, `*IT.java` Failsafe integration tests, and a packaged-JAR e2e smoke test. **Delivery:** a GitHub Actions pipeline with a `static-check` composite gate (`google-java-format`, Checkstyle, hadolint, actionlint, `gitleaks`, Mermaid lint, Trivy filesystem scan), a Trivy image scan, a boot-marker smoke test, `container-structure-test`, multi-arch build, and cosign keyless signing to GHCR — plus OWASP dependency-check, a mise-pinned toolchain, Renovate dependency automation, and a Skaffold-driven Kubernetes deploy.
+A deliberately minimal Spring Boot 4 REST microservice (hotel CRUD over in-memory H2) that serves as a **hardened container-pipeline reference** — the value is the build, test, and delivery harness around the app, not the app itself. **Build:** four image paths — multi-stage Dockerfile with BuildKit (consuming Spring Boot's layered jar), Cloud Native Buildpacks via the `pack` CLI, Kaniko, and the Spring Boot Maven plugin's `build-image` goal (Paketo). **Test:** a three-layer pyramid — Spring MockMvc unit tests, `*IT.java` Failsafe integration tests, and a packaged-JAR e2e smoke test. **Delivery:** a GitHub Actions pipeline with a `static-check` composite gate (`google-java-format`, Checkstyle, hadolint, actionlint, `gitleaks`, Mermaid lint, Trivy filesystem scan), a Trivy image scan, a boot-marker smoke test, `container-structure-test`, an amd64 image build, and cosign keyless signing to GHCR — plus OWASP dependency-check, a mise-pinned toolchain, Renovate dependency automation, and a Skaffold-driven Kubernetes deploy.
 
 ```mermaid
 C4Context
@@ -15,7 +15,7 @@ C4Context
     Person(client, "REST Client", "curl, browser, Postman")
     System(sbd, "Spring Boot service", "REST + embedded H2")
     System_Ext(prom, "Prometheus", "Scrapes /actuator/prometheus")
-    System_Ext(registry, "GHCR", "Signed multi-arch image")
+    System_Ext(registry, "GHCR", "Signed amd64 image")
 
     Rel(client, sbd, "CRUD /example/v1/hotels", "HTTPS / JSON")
     Rel(prom, sbd, "Metrics scrape", "HTTP")
@@ -90,14 +90,14 @@ C4Container
     Rel(client, api, "REST over HTTPS/HTTP", "JSON or XML")
     Rel(api, db, "JPA queries", "JDBC in-process")
     Rel(prom, api, "Scrapes /actuator/prometheus", "HTTP")
-    Rel(gha, registry, "Publishes signed multi-arch image", "HTTPS / OCI push (cosign signed)")
+    Rel(gha, registry, "Publishes signed amd64 image", "HTTPS / OCI push (cosign signed)")
 ```
 
 - **REST Service** — Spring Boot 4.0.6 on Java 25 (Temurin LTS), embedded Tomcat 11; serves `/example/v1/hotels`, Actuator, and Swagger UI on the same port.
 - **H2 Database** — in-memory JPA/Hibernate datastore; data is transient and resets on each application restart (intentional for the demo).
 - **Prometheus** — scrapes `/actuator/prometheus` over HTTP; no push gateway, no remote write.
-- **GHCR** — receives signed multi-arch images from GitHub Actions; consumers verify with `cosign verify` against the workflow's OIDC identity.
-- **GitHub Actions** — CI/CD: runs the three-layer test pyramid, builds and Trivy-scans the image, signs it with cosign, and publishes the multi-arch image to GHCR on tag pushes.
+- **GHCR** — receives signed amd64 images from GitHub Actions; consumers verify with `cosign verify` against the workflow's OIDC identity.
+- **GitHub Actions** — CI/CD: runs the three-layer test pyramid, builds and Trivy-scans the image, signs it with cosign, and publishes the amd64 image to GHCR on tag pushes.
 
 ### Request flow
 
@@ -349,7 +349,7 @@ GitHub Actions runs on push to `main`, pull requests, `v*` tags, manual dispatch
 | `build` | code diffs | `make build` — packages the jar, uploads as artifact |
 | `e2e` | code diffs | `make e2e` — boots the packaged JAR on a free port, curl-based CRUD + Actuator + Swagger smoke |
 | `cve-check` | tags + weekly + dispatch | OWASP dependency-check; NVD database cached |
-| `docker` | code diffs (build always; push/sign tag-gated at step level) | Build, Trivy scan, smoke-test, container-structure-test, multi-arch (`linux/amd64`+`linux/arm64`) push (tag only), cosign sign (tag only) |
+| `docker` | code diffs (build always; push/sign tag-gated at step level) | Build, Trivy scan, smoke-test, container-structure-test, `linux/amd64` push (tag only), cosign sign (tag only) |
 | `ci-pass` | all | Aggregator gate for branch protection |
 
 A separate `Cleanup old workflow runs` workflow prunes old workflow runs and orphaned caches on a weekly schedule (Sunday 00:00 UTC) plus manual dispatch.
@@ -366,7 +366,7 @@ The `docker` job runs these gates **before** any image is pushed to GHCR. Any fa
 | 2 | Trivy image scan (CRITICAL/HIGH blocking) | Fixed CVEs in base image, OS packages, build layers | `aquasecurity/trivy-action` with `image-ref:` |
 | 3 | Spring Boot boot-marker smoke test | Image fails to start (classpath, JVM flags, config) | `docker run` + grep boot marker in logs |
 | 4 | container-structure-test | USER/ENTRYPOINT/WORKDIR/exposed-port drift, layered-jar layout regressions | `container-structure-test` against `container-structure-test.yaml` |
-| 5 | Build + push | Publishes multi-arch (`linux/amd64`+`linux/arm64`) to GHCR | `docker/build-push-action` with `push: true` |
+| 5 | Build + push | Publishes `linux/amd64` to GHCR | `docker/build-push-action` with `push: true` |
 | 6 | Cosign keyless OIDC signing | Sigstore signature on the manifest digest | `sigstore/cosign-installer` + `cosign sign` |
 
 Buildkit in-manifest attestations (`provenance`, `sbom`) are disabled so the image index stays free of `unknown/unknown` platform entries — this keeps the registry "OS / Arch" tab rendering correctly. Cosign keyless signing provides supply-chain verification.
