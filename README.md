@@ -381,9 +381,13 @@ cosign verify ghcr.io/andriykalashnykov/spring-boot-demo/app:<tag> \
 
 ### Required Secrets and Variables
 
+The `cve-check` job runs OWASP dependency-check against **two** independent vulnerability sources (NVD and Sonatype OSS Index); each is gated on optional secrets:
+
 | Name | Type | Used by | How to obtain |
 |------|------|---------|---------------|
-| `NVD_API_KEY` | Secret (optional) | `cve-check` | Free key from [NIST NVD](https://nvd.nist.gov/developers/request-an-api-key). Without it, the OWASP dependency-check still runs but at slower/throttled rates |
+| `NVD_API_KEY` | Secret (optional) | `cve-check` | Free key from [NIST NVD](https://nvd.nist.gov/developers/request-an-api-key). Without it, the NVD analyzer still runs but at slower/throttled rates |
+| `OSS_INDEX_USER` | Secret (optional) | `cve-check` | Account email for [Sonatype OSS Index](https://ossindex.sonatype.org/). Pairs with `OSS_INDEX_TOKEN` |
+| `OSS_INDEX_TOKEN` | Secret (optional) | `cve-check` | Free token from [Sonatype OSS Index](https://ossindex.sonatype.org/) → user settings. **Without both `OSS_INDEX_*` secrets the OSS Index analyzer is silently disabled** (warning only, job still exits 0), so a green `cve-check` runs at reduced coverage |
 
 The `docker` job authenticates to GHCR using the automatically-scoped `GITHUB_TOKEN` provided by GitHub Actions; cosign keyless signing uses the runner's OIDC identity via Sigstore Fulcio (no signing key material stored anywhere).
 
