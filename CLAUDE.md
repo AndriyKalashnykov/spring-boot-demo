@@ -56,7 +56,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | File | Triggers | Purpose |
 |----------|------|----------|---------|
-| CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch, weekly schedule (`cve-check` only) | changes (paths-filter) → static-check → (test, integration-test, build) → (e2e, docker = scan + smoke + container-structure-test + tag-gated multi-arch `linux/amd64`+`linux/arm64` push + sign) + cve-check (tags + weekly) → ci-pass aggregator |
+| CI | `ci.yml` | push to main, PRs, `v*` tags, manual dispatch, weekly schedule (`cve-check` only) | changes (paths-filter) → static-check → (test, integration-test, build) → (e2e, docker = scan + smoke + container-structure-test + tag-gated `linux/amd64` push + sign) + cve-check (tags + weekly) → ci-pass aggregator |
 | Cleanup old workflow runs | `cleanup-runs.yml` | weekly (Sunday) + manual + `workflow_call` | Delete old workflow runs and orphaned caches (preserves `main`, default branch, tags) |
 
 The `cve-check` job runs OWASP dependency-check against two independent vuln sources, each gated on optional secrets:
