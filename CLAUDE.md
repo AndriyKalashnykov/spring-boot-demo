@@ -134,6 +134,15 @@ Resolved by the SB 2.3.9 → 4.0.5 migration:
 - Test coverage: added `HotelControllerIT.createWithNullNameReturns400` + `createWithBlankNameReturns400` + `getHotelsNegativePageReturns400` + `getHotelsZeroSizeReturns400`, `HotelRepositoryIT.findHotelByCityNoMatchReturnsNull`; deepened `ActuatorIT.infoEndpointExposesBuildArtifact` (asserts `build.artifact = "spring-boot-demo"`) and `ActuatorIT.prometheusScrapeReturnsExpositionFormat` (asserts `# HELP` + `# TYPE`).
 - Confirmed not actionable: the Mermaid C4 "add a legend" LOW finding — Mermaid's C4 implementation has no legend directive (`[ ] Legend` is explicitly listed as an unimplemented feature in the official Mermaid docs). Resolving would require migrating diagrams from Mermaid C4 to C4-PlantUML, far beyond a LOW.
 
+### Also resolved (2026-06-06 — upgrade-analysis)
+
+- Removed the stale `<jackson-bom.version>3.1.1</jackson-bom.version>` override from `pom.xml`. It was added to fix GHSA-2m67-wjpj-xhg9 (Jackson Core document-length bypass, first patched 3.1.1) back when the Spring Boot **4.0.5** BOM pinned Jackson 3.1.0. The **4.0.6** BOM now ships `jackson-bom.version = 3.1.2`, which already includes that fix — so the override had become redundant *and* a downgrade (it pinned `tools.jackson.core:*` to 3.1.1, below the BOM's 3.1.2). Removing it lets the project ride the BOM; `dependency:tree` confirms `tools.jackson.core:jackson-core/jackson-databind` now resolve to 3.1.2. Verified: unit 2/2 + integration 32/32 green. Not Renovate-tracked (parent-property override not referenced by a declared dependency), so removal — not tracking — was the fix.
+- Kept the Tomcat `11.0.22` override (verified still required): all 6 CVEs in its comment are first-patched in 11.0.22, while the 4.0.6 BOM still ships the vulnerable 11.0.21 (range `>= 11.0.0-M1, < 11.0.22`). 11.0.22 is also the latest 11.0.x patch.
+
+## Upgrade Backlog
+
+- [ ] **Spring Boot 4.1.0 GA bump** — on 4.0.6 (latest GA); 4.1.0 is RC/milestone only as of 2026-06-06. Renovate will propose the GA when it lands. Plan the move before 4.0.x OSS support ends (~1 year from the Nov-2025 4.0 GA, i.e. ~late 2026).
+
 ## Skills
 
 Use the following skills when working on related files:
