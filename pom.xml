@@ -13,7 +13,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.6</version>
+        <version>4.1.0</version>
     </parent>
 
     <properties>
@@ -24,9 +24,6 @@
         <!-- Local/buildpacks default; CI publishes via docker/metadata-action to ghcr.io/<owner>/<repo>/app -->
         <docker.image.name>${project.artifactId}:${project.version}</docker.image.name>
         <springdoc.version>3.0.3</springdoc.version>
-        <!-- Override: bump Tomcat ahead of the Spring Boot 4.0.6 BOM; 11.0.22 fixes
-             CVE-2026-41293/43512/43515 (CRITICAL) + CVE-2026-41284/42498/43513 (HIGH) -->
-        <tomcat.version>11.0.22</tomcat.version>
     </properties>
 
     <dependencies>

@@ -21,11 +21,23 @@ COPY .git .git
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B package
 
-# Extract Spring Boot layered jar
+# Extract the Spring Boot layered jar. Spring Boot 4.x removed the old
+# `layertools` jarmode; `tools ... extract --layers --launcher` produces the
+# same dependencies/spring-boot-loader/snapshot-dependencies/application
+# layout the runtime stage + JarLauncher ENTRYPOINT depend on.
 WORKDIR /build/target
-RUN java -Djarmode=layertools -jar ./*.jar extract
+RUN java -Djarmode=tools -jar ./*.jar extract --layers --launcher --destination extracted
 
 FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
+
+# Patch the base image's stale system libs (the base lags security updates
+# between rebuilds). Clears fixable Ubuntu CVEs that Trivy gates on — e.g.
+# libssl3/openssl 3.0.2-0ubuntu1.23 → 3.0.2-0ubuntu1.25 (CVE-2026-45447,
+# Heap UAF in PKCS7_verify). Run as root before the USER switch.
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 # Non-root numeric UID — Kubernetes can verify runAsNonRoot at admission.
 RUN groupadd -g 65532 -r nonroot \
@@ -37,10 +49,10 @@ WORKDIR /application
 # --link decouples these layers from the build-stage digest; rebuilds of
 # the build stage don't invalidate the runtime layers when content is
 # unchanged.
-COPY --link --from=build --chown=65532:65532 /build/target/dependencies/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/snapshot-dependencies/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/spring-boot-loader/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/application/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/snapshot-dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/spring-boot-loader/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/application/ ./
 
 EXPOSE 8080
 

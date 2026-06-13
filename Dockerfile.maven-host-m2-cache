@@ -15,9 +15,20 @@ FROM maven:${MAVEN_IMAGE_VERSION} AS build
 WORKDIR /build
 COPY target target
 WORKDIR /build/target
-RUN java -Djarmode=layertools -jar ./*.jar extract
+# Spring Boot 4.x removed the `layertools` jarmode; `tools ... extract
+# --layers --launcher` produces the same layered layout for JarLauncher.
+RUN java -Djarmode=tools -jar ./*.jar extract --layers --launcher --destination extracted
 
 FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
+
+# Patch the base image's stale system libs (the base lags security updates
+# between rebuilds). Clears fixable Ubuntu CVEs that Trivy gates on — e.g.
+# libssl3/openssl 3.0.2-0ubuntu1.23 → 3.0.2-0ubuntu1.25 (CVE-2026-45447,
+# Heap UAF in PKCS7_verify). Run as root before the USER switch.
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g 65532 -r nonroot \
  && useradd -u 65532 -g nonroot -r -s /usr/sbin/nologin -M nonroot
@@ -25,10 +36,10 @@ RUN groupadd -g 65532 -r nonroot \
 USER 65532:65532
 WORKDIR /application
 
-COPY --link --from=build --chown=65532:65532 /build/target/dependencies/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/snapshot-dependencies/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/spring-boot-loader/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/application/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/snapshot-dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/spring-boot-loader/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/application/ ./
 
 EXPOSE 8080
 
