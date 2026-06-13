@@ -26,7 +26,7 @@ See `make help` for the full target list.
 
 - `src/main/java/com/test/example/` -- Application source (Spring Boot REST)
 - `src/test/java/` -- Tests: `.../test/` (MockMvc unit), `.../it/` (`*IT.java` Failsafe integration)
-- `pom.xml` -- Maven build config (Spring Boot 4.0.6, Java 25)
+- `pom.xml` -- Maven build config (Spring Boot 4.1.0, Java 25)
 - `Dockerfile` / `Dockerfile.maven-host-m2-cache` -- Multi-stage Docker builds
 - `container-structure-test.yaml` -- USER/ENTRYPOINT/layered-jar layout assertions (run via `make image-test`)
 - `e2e/smoke.sh` -- End-to-end smoke test (boots the packaged JAR, curl-based CRUD + Actuator + Swagger; run via `make e2e`)
@@ -43,7 +43,7 @@ See `make help` for the full target list.
 
 - **Group/Artifact**: `com.test:spring-boot-demo:0.0.1`
 - **Java version**: 25 (Temurin LTS, pinned in `.mise.toml` + `.java-version`)
-- **Spring Boot**: 4.0.6 (Spring Framework 7, embedded Tomcat 11)
+- **Spring Boot**: 4.1.0 (Spring Framework 7, embedded Tomcat 11)
 - **Default branch**: `main`
 - **Endpoints**: REST CRUD at `/example/v1/hotels`, Swagger UI at `/swagger-ui/index.html`, OpenAPI 3 JSON at `/v3/api-docs`, Actuator at `/actuator/*`
 - **Database**: H2 in-memory (JPA/Hibernate)
@@ -139,9 +139,19 @@ Resolved by the SB 2.3.9 → 4.0.5 migration:
 - Removed the stale `<jackson-bom.version>3.1.1</jackson-bom.version>` override from `pom.xml`. It was added to fix GHSA-2m67-wjpj-xhg9 (Jackson Core document-length bypass, first patched 3.1.1) back when the Spring Boot **4.0.5** BOM pinned Jackson 3.1.0. The **4.0.6** BOM now ships `jackson-bom.version = 3.1.2`, which already includes that fix — so the override had become redundant *and* a downgrade (it pinned `tools.jackson.core:*` to 3.1.1, below the BOM's 3.1.2). Removing it lets the project ride the BOM; `dependency:tree` confirms `tools.jackson.core:jackson-core/jackson-databind` now resolve to 3.1.2. Verified: unit 2/2 + integration 32/32 green. Not Renovate-tracked (parent-property override not referenced by a declared dependency), so removal — not tracking — was the fix.
 - Kept the Tomcat `11.0.22` override (verified still required): all 6 CVEs in its comment are first-patched in 11.0.22, while the 4.0.6 BOM still ships the vulnerable 11.0.21 (range `>= 11.0.0-M1, < 11.0.22`). 11.0.22 is also the latest 11.0.x patch.
 
+### Also resolved (2026-06-13 — unblock Renovate PR backlog)
+
+Three open Renovate PRs were all BLOCKED; root-caused and resolved together:
+
+- **Dockerfile base-image CVE hardening (the real blocker for #114 + #115).** The `docker` job's Trivy image scan (`ignore-unfixed: true`, CRITICAL/HIGH blocks) failed on `libssl3`/`openssl` **CVE-2026-45447** (Heap UAF in `PKCS7_verify`, HIGH): the `eclipse-temurin:25-jre-jammy` base ships stale `3.0.2-0ubuntu1.23`; fixed in `3.0.2-0ubuntu1.25` (published in jammy-security + jammy-updates 2026-06-09). Added `apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*` to the runtime stage of **both** `Dockerfile` and `Dockerfile.maven-host-m2-cache` (as root, before the `USER 65532` switch). Empirically verified: base scans **2 HIGH → 0 HIGH/0 CRITICAL** after the upgrade. No stray non-apt CVE binaries on this base (`/usr/bin/pebble` absent — the portfolio pebble-removal step is N/A). hadolint-clean (DL3005 targets `dist-upgrade`, not `upgrade`). This is a **`main`** fix — both #114 and #115 failed identically on it while their own diffs were clean (per the "N PRs failing identically → diagnose main" triage rule).
+- **Spring Boot `4.0.6` → `4.1.0` (PR #115).** 4.1.0 confirmed GA on Maven Central (released 2026-06-10; final, not RC/M). Multi-agent research verified no breaking change touches this project (no deferred/lazy JPA bootstrap-mode, no AOT/native build, no `layertools` jar-mode, servlet MVC only). Spring Framework rides `7.0.7 → 7.0.8` (patch, not 7.1). Verified: unit 2/2 + integration 32/32 green.
+- **Removed the now-redundant `<tomcat.version>11.0.22</tomcat.version>` override.** The 4.1.0 BOM already ships Tomcat **11.0.22** (verified via `help:evaluate` → `11.0.22`), so the override matched the BOM exactly — same hygiene as the 2026-06-06 jackson-bom removal. (It had to stay while on 4.0.6, whose BOM shipped the vulnerable 11.0.21; only removable once on 4.1.0.) Not Renovate-tracked, so removal — not tracking — was the fix.
+- **Paketo builder `0.4.586` → `0.4.589` (PR #114)** in `scripts/build-dockerimage-buildpacks.sh` + `skaffold.yaml`. Valid bump; buildpacks path is not scanned by the CI Trivy gate (it scans only the `Dockerfile`-built `spring-boot-demo:scan`).
+- **Closed PR #113 (trivy `0.71.0` → `0.71.1` in `.mise.toml`) as un-mergeable.** Root cause: trivy created git tag `v0.71.1` (2026-06-10) but **published no GitHub release / binary assets** for it (the `latest` release is still `v0.71.0`), so mise's aqua backend 404s on `releases/tags/v0.71.1` and `static-check` can't install the tool. Not a config defect — the version is genuinely uninstallable. Renovate re-proposes when a real release lands.
+
 ## Upgrade Backlog
 
-- [ ] **Spring Boot 4.1.0 GA bump** — on 4.0.6 (latest GA); 4.1.0 is RC/milestone only as of 2026-06-06. Renovate will propose the GA when it lands. Plan the move before 4.0.x OSS support ends (~1 year from the Nov-2025 4.0 GA, i.e. ~late 2026).
+- _(empty — Spring Boot is on 4.1.0, the latest GA as of 2026-06-13. Renovate proposes the next bump when it lands.)_
 
 ## Skills
 

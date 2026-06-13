@@ -27,6 +27,15 @@ RUN java -Djarmode=layertools -jar ./*.jar extract
 
 FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
 
+# Patch the base image's stale system libs (the base lags security updates
+# between rebuilds). Clears fixable Ubuntu CVEs that Trivy gates on — e.g.
+# libssl3/openssl 3.0.2-0ubuntu1.23 → 3.0.2-0ubuntu1.25 (CVE-2026-45447,
+# Heap UAF in PKCS7_verify). Run as root before the USER switch.
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
 # Non-root numeric UID — Kubernetes can verify runAsNonRoot at admission.
 RUN groupadd -g 65532 -r nonroot \
  && useradd -u 65532 -g nonroot -r -s /usr/sbin/nologin -M nonroot

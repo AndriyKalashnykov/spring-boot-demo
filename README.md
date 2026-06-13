@@ -27,7 +27,7 @@ The container registry is [GHCR (GitHub Container Registry)](https://ghcr.io). P
 | Component | Technology |
 |-----------|-----------|
 | Language | Java 25 (Temurin LTS) |
-| Framework | Spring Boot 4.0.6 (Spring Framework 7, embedded Tomcat 11) |
+| Framework | Spring Boot 4.1.0 (Spring Framework 7, embedded Tomcat 11) |
 | Persistence | Spring Data JPA + Hibernate 7, H2 2.x in-memory |
 | API | REST (JSON and XML via Jackson) + springdoc-openapi 3 |
 | Metrics | Spring Boot Actuator + Micrometer Prometheus |
@@ -79,7 +79,7 @@ C4Container
     Person(client, "REST Client", "curl, httpie, browser, Postman")
 
     System_Boundary(sys, "Spring Boot service") {
-        Container(api, "REST Service", "Spring Boot 4.0.6, Java 25, embedded Tomcat 11", "CRUD /example/v1/hotels, Actuator, Swagger UI")
+        Container(api, "REST Service", "Spring Boot 4.1.0, Java 25, embedded Tomcat 11", "CRUD /example/v1/hotels, Actuator, Swagger UI")
         ContainerDb(db, "H2 Database", "In-memory JPA/Hibernate", "Hotel entities (transient)")
     }
 
@@ -93,7 +93,7 @@ C4Container
     Rel(gha, registry, "Publishes signed amd64 image", "HTTPS / OCI push (cosign signed)")
 ```
 
-- **REST Service** — Spring Boot 4.0.6 on Java 25 (Temurin LTS), embedded Tomcat 11; serves `/example/v1/hotels`, Actuator, and Swagger UI on the same port.
+- **REST Service** — Spring Boot 4.1.0 on Java 25 (Temurin LTS), embedded Tomcat 11; serves `/example/v1/hotels`, Actuator, and Swagger UI on the same port.
 - **H2 Database** — in-memory JPA/Hibernate datastore; data is transient and resets on each application restart (intentional for the demo).
 - **Prometheus** — scrapes `/actuator/prometheus` over HTTP; no push gateway, no remote write.
 - **GHCR** — receives signed amd64 images from GitHub Actions; consumers verify with `cosign verify` against the workflow's OIDC identity.
