@@ -15,7 +15,9 @@ FROM maven:${MAVEN_IMAGE_VERSION} AS build
 WORKDIR /build
 COPY target target
 WORKDIR /build/target
-RUN java -Djarmode=layertools -jar ./*.jar extract
+# Spring Boot 4.x removed the `layertools` jarmode; `tools ... extract
+# --layers --launcher` produces the same layered layout for JarLauncher.
+RUN java -Djarmode=tools -jar ./*.jar extract --layers --launcher --destination extracted
 
 FROM eclipse-temurin:${TEMURIN_IMAGE_VERSION} AS runtime
 
@@ -34,10 +36,10 @@ RUN groupadd -g 65532 -r nonroot \
 USER 65532:65532
 WORKDIR /application
 
-COPY --link --from=build --chown=65532:65532 /build/target/dependencies/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/snapshot-dependencies/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/spring-boot-loader/ ./
-COPY --link --from=build --chown=65532:65532 /build/target/application/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/snapshot-dependencies/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/spring-boot-loader/ ./
+COPY --link --from=build --chown=65532:65532 /build/target/extracted/application/ ./
 
 EXPOSE 8080
 
