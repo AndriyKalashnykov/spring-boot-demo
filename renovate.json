@@ -71,6 +71,12 @@
       "minimumReleaseAge": "7 days"
     },
     {
+      "description": "Hold mise aqua-tool bumps (github-tags datasource: hadolint, act, trivy, gitleaks, actionlint, shellcheck, container-structure-test) for a 3-day stability buffer. mise's aqua: backend installs the binary from the upstream GitHub *Release*, but Renovate's native mise manager proposes off the *tag* (github-tags datasource) — so a tag pushed before its release artifacts publish yields a PR that 404s on `mise install` and reddens static-check. The major-only (3d) and java-version (7d) rules above don't cover aqua patch/minor bumps. Source: PR #113 — trivy 0.71.0->0.71.1 was tagged 2026-06-10 with no GitHub Release published, so mise/aqua 404'd. See /renovate skill 'mise aqua: backend can race ahead of upstream release artifacts'.",
+      "matchManagers": ["mise"],
+      "matchDatasources": ["github-tags"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
       "description": "Group Spring Boot dependencies",
       "matchPackageNames": ["/^org\\.springframework\\.boot/"],
       "groupName": "Spring Boot"
