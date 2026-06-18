@@ -119,10 +119,15 @@
       "groupName": "Maven"
     },
     {
-      "description": "Disable digest pinning for Makefile-tracked Docker tags — config:best-practices enables docker:pinDigests, which collides on the same renovate branch with the version bump for digest-less Makefile pins (e.g. MERMAID_CLI_VERSION)",
+      "description": "Disable digest pinning for ALL custom.regex-tracked Docker tags (Makefile MERMAID_CLI_VERSION, scripts/*.sh maven/kaniko/paketo pins, skaffold.yaml builder). config:best-practices enables docker:pinDigests, but the custom-regex matchStrings capture only currentValue (no currentDigest group / no FROM-line @sha256 slot), so Renovate cannot write a digest into a `VAR=\"image:tag\"` assignment and the pin fails every run ('Error updating branch: update failure' on the Dependency Dashboard). The production Dockerfile is digest-pinned via the dockerfile manager; these auxiliary build helpers stay version-pinned. Previously scoped to Makefile only; broadened after the scripts/skaffold pins kept erroring (issue #39).",
       "matchManagers": ["custom.regex"],
-      "matchFileNames": ["Makefile"],
       "matchDatasources": ["docker"],
+      "pinDigests": false
+    },
+    {
+      "description": "Disable digest pinning for the BuildKit frontend syntax directive (# syntax=docker/dockerfile:1). config:best-practices' docker:pinDigests tries to pin it, which fails the same way; docker/dockerfile:1 is the recommended floating tag for the frontend.",
+      "matchManagers": ["dockerfile"],
+      "matchDepNames": ["docker/dockerfile"],
       "pinDigests": false
     }
   ]
