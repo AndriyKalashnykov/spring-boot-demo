@@ -8,7 +8,7 @@ build:
     - image: spring-boot-demo
       buildpacks:
         # renovate: datasource=docker depName=paketobuildpacks/builder-jammy-base
-        builder: "paketobuildpacks/builder-jammy-base:0.4.590"
+        builder: "paketobuildpacks/builder-jammy-base:0.4.591"
 profiles:
   - name: gcb
     build:
