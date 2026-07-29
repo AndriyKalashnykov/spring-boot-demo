@@ -392,7 +392,7 @@ jobs:
       # All gates passed → publish amd64 on tag pushes only.
       - name: Log in to GHCR
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
