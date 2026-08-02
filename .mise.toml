@@ -22,7 +22,7 @@ maven = "3.9.16"
 # built-in `mise` manager extracts these natively as `aqua:owner/repo`.
 # Adding an annotation creates a duplicate PR per tool because the
 # custom-regex manager would also match on the comment's bare `owner/repo`.
-"aqua:hadolint/hadolint" = "2.14.0"
+"aqua:hadolint/hadolint" = "2.15.0"
 "aqua:nektos/act" = "0.2.89"
 "aqua:aquasecurity/trivy" = "0.72.0"
 "aqua:gitleaks/gitleaks" = "8.30.1"
