@@ -4,7 +4,7 @@
 ARG MAVEN_IMAGE_VERSION=3.9.16-eclipse-temurin-25@sha256:7e461cec477077c1d9e50b13df8aef9018764410f4c4cd7c34803f10c4c99e4c
 
 # renovate: datasource=docker depName=eclipse-temurin
-ARG TEMURIN_IMAGE_VERSION=25.0.3_9-jre-jammy@sha256:b8ba5fca9d88b6ecc3a46c8e75b744f84aca9a9d08587901b5ab480baf641ab5
+ARG TEMURIN_IMAGE_VERSION=25.0.3_9-jre-jammy@sha256:7b709ee8bf2554a59b83b1df8b84c96607ab9867b34dc7c7d05b412e06f86d5f
 
 # Used by scripts/build-dockerimage-m2-cache.sh and scripts/build-dockerimage-kaniko.sh
 # for local fast iteration — consumes a jar that was pre-built on the host
