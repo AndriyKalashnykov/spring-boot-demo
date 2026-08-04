@@ -4,7 +4,7 @@
 ARG MAVEN_IMAGE_VERSION=3.9.16-eclipse-temurin-25@sha256:1b1fc6d0168ea616afd1c861d6f32ec37c9ec2ffe88a0351b3771dd4ad86b0d8
 
 # renovate: datasource=docker depName=eclipse-temurin
-ARG TEMURIN_IMAGE_VERSION=25.0.3_9-jre-jammy@sha256:7b709ee8bf2554a59b83b1df8b84c96607ab9867b34dc7c7d05b412e06f86d5f
+ARG TEMURIN_IMAGE_VERSION=25.0.3_9-jre-jammy@sha256:5bd5dbe00f40ea149de434a75029713765a2912cfc1fd770cc7c7aff007384ea
 
 FROM maven:${MAVEN_IMAGE_VERSION} AS build
 WORKDIR /build
