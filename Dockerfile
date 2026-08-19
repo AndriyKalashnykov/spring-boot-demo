@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # renovate: datasource=docker depName=maven
-ARG MAVEN_IMAGE_VERSION=3.9.16-eclipse-temurin-25@sha256:6d6b0631c432a1041ef28eb37d5753f3fc8076256f50544b555c4cce865e962a
+ARG MAVEN_IMAGE_VERSION=3.9.16-eclipse-temurin-25@sha256:e401a38b409619191be709faa61b2d9f00dc77c53bc8c9ff4c2f28b364948a08
 
 # renovate: datasource=docker depName=eclipse-temurin
 ARG TEMURIN_IMAGE_VERSION=25.0.3_9-jre-jammy@sha256:966f3ab99ef7ad3cbc89ebaf954597d205a5e8d6a53915280afd48fed4a59c5b
