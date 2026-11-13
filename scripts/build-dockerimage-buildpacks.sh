@@ -10,7 +10,7 @@
 set -euo pipefail
 
 # renovate: datasource=docker depName=paketobuildpacks/builder-jammy-base
-PAKETO_BUILDER_VERSION="0.4.685"
+PAKETO_BUILDER_VERSION="0.4.686"
 PAKETO_BUILDER="paketobuildpacks/builder-jammy-base:${PAKETO_BUILDER_VERSION}"
 
 LAUNCH_DIR=$(pwd)
